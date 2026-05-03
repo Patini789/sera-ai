@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curador de Datos - Sera</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        /* Variables y Tema Global */
+        :root {
+            --bg-main: #0B0F19;
+            --bg-card: #151A27;
+            --border-color: #272E3F;
+            --accent-primary: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+
+        body { 
+            background-color: var(--bg-main); 
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            overflow: hidden; /* Previene scroll global */
+        }
+
+        /* Top Navigation Navbar */
+        .glass-header {
+            background: rgba(11, 15, 25, 0.7);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1030;
+        }
+
+        /* Tarjetas de Contenido */
+        .editor-card { 
+            background-color: var(--bg-card); 
+            border: 1px solid var(--border-color); 
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            transition: border-color 0.3s ease;
+        }
+        
+        .card-header-custom {
+            border-bottom: 1px solid var(--border-color);
+            background-color: transparent;
+            padding: 12px 20px;
+            font-weight: 600;
+            color: #f8fafc;
+        }
+
+        /* Botones de acción pequeña */
+        .btn-restore {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .btn-restore:hover {
+            background: rgba(245, 158, 11, 0.15);
+            border-color: #f59e0b;
+            color: #fbbf24;
+        }
+
+        /* Editores de Texto */
+        textarea.custom-textarea { 
+            background-color: #0F131F !important; 
+            border: 1px solid var(--border-color); 
+            color: #f8fafc;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace; 
+            font-size: 0.9rem; 
+            resize: vertical;
+            min-height: 80px;
+            line-height: 1.5;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        textarea.custom-textarea:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+
+        /* Formato Visual del Historial de Chat */
+        .history-container {
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #cbd5e1;
+        }
+        .chat-bubble {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            white-space: pre-wrap; /* Mantiene los saltos de línea sin usar <br> */
+        }
+        .chat-user {
+            background: rgba(99, 102, 241, 0.08);
+            border-left: 3px solid var(--accent-primary);
+        }
+        .chat-assistant {
+            background: rgba(16, 185, 129, 0.08);
+            border-left: 3px solid #10b981;
+        }
+        .bubble-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Alertas y Badges */
+        .info-alert {
+            background-color: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            color: #38bdf8;
+            border-radius: 8px;
+        }
+        .badge-counter {
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            font-weight: 500;
+        }
+
+        /* Botón de Guardado */
+        .btn-brand-success {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-brand-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            color: white;
+        }
+
+        /* Offcanvas (Sidebar System Prompt) */
+        .offcanvas.offcanvas-start {
+            width: 480px;
+            background-color: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+        }
+        .offcanvas-header { border-bottom: 1px solid var(--border-color); }
+
+        /* Think Editor Styles */
+        .think-editor-wrapper {
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.06) 0%, rgba(99, 102, 241, 0.04) 100%);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .think-editor-wrapper:hover {
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+        .think-editor-wrapper.open {
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.1), 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .think-toggle-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 10px 16px;
+            background: transparent;
+            border: none;
+            color: #c4b5fd;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .think-toggle-btn:hover {
+            background: rgba(139, 92, 246, 0.08);
+        }
+
+        .think-icon {
+            color: #a78bfa;
+            font-size: 1.1rem;
+            filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.5));
+            transition: transform 0.3s ease;
+        }
+        .think-editor-wrapper.open .think-icon {
+            transform: scale(1.15);
+            filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.8));
+        }
+
+        .think-toggle-label {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+        }
+
+        .think-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .think-badge.has-content {
+            background: rgba(139, 92, 246, 0.25);
+            border-color: rgba(139, 92, 246, 0.4);
+            color: #c4b5fd;
+        }
+
+        .think-status {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .think-chevron {
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .think-editor-wrapper.open .think-chevron {
+            transform: rotate(180deg);
+        }
+
+        .think-editor-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .think-editor-wrapper.open .think-editor-body {
+            max-height: 1200px;
+        }
+
+        .think-editor-inner {
+            padding: 0 16px 14px;
+        }
+
+        .think-hint {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+        }
+        .think-hint code {
+            color: #a78bfa;
+            background: rgba(139, 92, 246, 0.12);
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        .think-textarea {
+            background-color: rgba(139, 92, 246, 0.05) !important;
+            border-color: rgba(139, 92, 246, 0.2) !important;
+            font-size: 0.85rem !important;
+        }
+        .think-textarea:focus {
+            border-color: rgba(139, 92, 246, 0.5) !important;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15) !important;
+        }
+
+        .think-empty-state {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    </style>
+</head>
+<body class="d-flex flex-column">
+
+    <header class="glass-header flex-shrink-0 px-4 py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-sm btn-outline-light d-flex align-items-center gap-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#systemSidebar">
+                    <i class="bi bi-gear-fill"></i> System Prompt
+                </button>
+                <div class="vr bg-secondary opacity-50 mx-1"></div>
+                <h4 class="m-0 text-white" style="font-weight: 600;">
+                    <i class="bi bi-database-check me-2 text-primary"></i>Curador de Datasets
+                </h4>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary" onclick="goBack()" id="btnBack" title="Pregunta anterior">
+                    <i class="bi bi-arrow-left"></i> Atrás
+                </button>
+                <div class="input-group input-group-sm" style="width: 130px;">
+                    <span class="input-group-text bg-dark border-secondary text-white">#</span>
+                    <input type="number" class="form-control bg-dark border-secondary text-white text-center" id="jumpIndex" min="1">
+                    <button class="btn btn-outline-secondary" onclick="jumpTo()" title="Ir">Ir</button>
+                </div>
+                <span class="badge badge-counter fs-6 px-3 py-2 rounded-pill shadow-sm ms-2" id="counterBadge">Cargando...</span>
+            </div>
+        </div>
+    </header>
+
+    <main id="appContainer" class="flex-grow-1 overflow-hidden p-3 p-lg-4">
+        <div class="row h-100 g-4">
+            
+            <div class="col-lg-4 d-flex flex-column h-100">
+                <div class="editor-card d-flex flex-column flex-grow-1 overflow-hidden h-100">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-clock-history me-2 text-info"></i>Contexto Previo</span>
+                    </div>
+                    <div class="card-body p-0 overflow-auto flex-grow-1">
+                        <div class="history-container" id="historyViewer">
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8 d-flex flex-column h-100 overflow-auto" style="padding-right: 15px;">
+                
+                <div class="editor-card mb-3" style="flex: 0 0 auto;">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center cursor-pointer" onclick="toggleUserMessage()" style="cursor: pointer;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-fill text-primary"></i>
+                            <span>Mensaje del Usuario</span>
+                            <i class="bi bi-chevron-down ms-2 transition-transform" id="userMessageChevron" style="transition: transform 0.3s; color: var(--text-muted);"></i>
+                        </div>
+                        <button class="btn-restore" onclick="event.stopPropagation(); resetField('message')" title="Deshacer cambios">
+                            <i class="bi bi-arrow-counterclockwise"></i> Restaurar
+                        </button>
+                    </div>
+                    <div class="card-body p-3" id="userMessageBody" style="transition: max-height 0.4s ease; overflow: hidden; max-height: 800px;">
+                        <textarea id="messageEditor" class="form-control custom-textarea" rows="8"></textarea>
+                    </div>
+                </div>
+
+                <div class="editor-card d-flex flex-column flex-grow-1 overflow-hidden" style="border-color: rgba(16, 185, 129, 0.3);">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center" style="background: rgba(16, 185, 129, 0.05);">
+                        <span><i class="bi bi-robot me-2 text-success"></i>Respuesta de Sera</span>
+                        <button class="btn-restore" onclick="resetField('response')" title="Deshacer cambios">
+                            <i class="bi bi-arrow-counterclockwise"></i> Restaurar
+                        </button>
+                    </div>
+                    <div class="card-body p-3 d-flex flex-column flex-grow-1">
+
+                        <!-- Collapsible Think Block Editor -->
+                        <div class="think-editor-wrapper mb-3" id="thinkEditorWrapper">
+                            <button class="think-toggle-btn w-100" type="button" onclick="toggleThinkEditor()" id="thinkToggleBtn">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-lightbulb-fill think-icon"></i>
+                                    <span class="think-toggle-label">Pensamientos de Sera</span>
+                                    <span class="think-badge" id="thinkCharCount">0 chars</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="think-status" id="thinkStatus">
+                                        <i class="bi bi-eye-slash-fill"></i> Oculto
+                                    </span>
+                                    <i class="bi bi-chevron-down think-chevron" id="thinkChevron"></i>
+                                </div>
+                            </button>
+                            <div class="think-editor-body" id="thinkEditorBody">
+                                <div class="think-editor-inner">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="think-hint">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Edita el razonamiento interno. Se guardará dentro de <code>&lt;think&gt;</code> tags.
+                                        </div>
+                                        <button class="btn-restore" onclick="resetField('think')" title="Restaurar pensamientos originales">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Restaurar
+                                        </button>
+                                    </div>
+                                    <textarea id="thinkEditor" class="form-control custom-textarea think-textarea" rows="12"
+                                        placeholder="El razonamiento interno de Sera aparecerá aquí..."
+                                        oninput="updateThinkCount()"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <textarea id="responseEditor" class="form-control custom-textarea flex-grow-1" rows="12"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-3 d-flex gap-2">
+                    <button class="btn btn-outline-danger py-3 rounded-3 fs-5" style="flex: 0 0 15%;" onclick="deleteAndNext()" title="Descartar esta pregunta (ignorar en el dataset)">
+                        <i class="bi bi-trash3-fill"></i>
+                    </button>
+                    <button class="btn btn-brand-success py-3 rounded-3 fs-5 flex-grow-1" onclick="saveAndNext()">
+                        <i class="bi bi-check-circle-fill me-2"></i> Guardar y Siguiente
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="completionMessage" class="d-flex flex-column justify-content-center align-items-center h-100" style="display: none !important;">
+        <div class="text-center p-5 editor-card" style="max-width: 500px;">
+            <i class="bi bi-trophy-fill text-warning mb-3" style="font-size: 5rem;"></i>
+            <h2 class="text-white fw-bold">¡Dataset Completado!</h2>
+            <p class="text-muted fs-5 mt-3">Has revisado y curado todas las interacciones disponibles.</p>
+            <button class="btn btn-outline-primary mt-4 px-4" onclick="location.reload()"><i class="bi bi-arrow-repeat me-2"></i>Volver a verificar</button>
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-start shadow-lg" tabindex="-1" id="systemSidebar">
+        <div class="offcanvas-header bg-dark border-0 pt-4 px-4">
+            <h5 class="offcanvas-title text-white fw-bold"><i class="bi bi-terminal-fill me-2 text-secondary"></i> System Prompt</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column gap-3 p-4">
+            <div class="alert alert-dark border-secondary text-muted py-2 px-3" style="font-size: 0.85rem; background: rgba(255,255,255,0.03);">
+                Modifica el System Prompt aquí. Los cambios se guardarán para la interacción actual.
+            </div>
+            
+            <textarea id="systemEditor" class="form-control custom-textarea flex-grow-1"></textarea>
+            
+            <div class="d-flex gap-2 mt-2">
+                <button class="btn btn-outline-warning w-50" onclick="resetField('system')">
+                    <i class="bi bi-arrow-counterclockwise"></i> Deshacer
+                </button>
+                <button class="btn btn-primary w-50" data-bs-dismiss="offcanvas">
+                    <i class="bi bi-check2"></i> Aplicar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let originalData = {};
+        let hiddenThinkBlock = "";
+        let currentIndex = 0;
+        let thinkEditorOpen = false;
+        let userMessageOpen = true;
+
+        function toggleUserMessage() {
+            userMessageOpen = !userMessageOpen;
+            const body = document.getElementById('userMessageBody');
+            const chevron = document.getElementById('userMessageChevron');
+            if (userMessageOpen) {
+                body.style.maxHeight = '800px';
+                body.style.padding = '1rem';
+                chevron.style.transform = 'rotate(0deg)';
+            } else {
+                body.style.maxHeight = '0';
+                body.style.padding = '0 1rem';
+                chevron.style.transform = 'rotate(-180deg)';
+            }
+        }
+
+        // Formatea el historial crudo en burbujas de chat bonitas
+        function formatHistoryToBubbles(rawHistory) {
+            if (!rawHistory || rawHistory.trim() === "") return "<div class='text-center text-muted mt-5'><i class='bi bi-chat-square-dotted fs-1 d-block mb-2'></i>Sin historial previo.</div>";
+
+            let formatted = rawHistory
+                .replace(/USER:\s*([\s\S]*?)(?=ASSISTANT:|$)/g, 
+                    "<div class='chat-bubble chat-user'><div class='bubble-label text-primary'><i class='bi bi-person-circle'></i> USER</div>$1</div>")
+                .replace(/ASSISTANT:\s*([\s\S]*?)(?=USER:|$)/g, 
+                    "<div class='chat-bubble chat-assistant'><div class='bubble-label text-success'><i class='bi bi-robot'></i> ASSISTANT</div>$1</div>");
+            
+            return formatted;
+        }
+
+        // Strip <think></think> tags from content for the editor
+        function stripThinkTags(text) {
+            if (!text) return "";
+            return text.replace(/^<think>\s*/i, '').replace(/\s*<\/think>$/i, '').trim();
+        }
+
+        // Re-wrap edited content with <think> tags for saving
+        function wrapThinkTags(text) {
+            if (!text || text.trim() === "") return "";
+            return `<think>\n${text.trim()}\n</think>`;
+        }
+
+        function toggleThinkEditor() {
+            const wrapper = document.getElementById('thinkEditorWrapper');
+            const status = document.getElementById('thinkStatus');
+            thinkEditorOpen = !thinkEditorOpen;
+            wrapper.classList.toggle('open', thinkEditorOpen);
+            if (thinkEditorOpen) {
+                status.innerHTML = '<i class="bi bi-eye-fill"></i> Editando';
+            } else {
+                status.innerHTML = '<i class="bi bi-eye-slash-fill"></i> Oculto';
+            }
+        }
+
+        function updateThinkCount() {
+            const text = document.getElementById('thinkEditor').value;
+            const badge = document.getElementById('thinkCharCount');
+            const len = text.trim().length;
+            badge.textContent = len > 0 ? `${len} chars` : '0 chars';
+            badge.classList.toggle('has-content', len > 0);
+        }
+
+        // Returns the current think block ready for saving (with tags)
+        function getCurrentThinkBlock() {
+            const editorText = document.getElementById('thinkEditor').value.trim();
+            return wrapThinkTags(editorText);
+        }
+
+        async function loadNext() {
+            try {
+                const res = await fetch('/api/get_next');
+                const data = await res.json();
+
+                if (data.status === "completed") {
+                    document.getElementById('appContainer').style.removeProperty('display');
+                    document.getElementById('appContainer').style.setProperty('display', 'none', 'important');
+                    document.getElementById('completionMessage').style.setProperty('display', 'flex', 'important');
+                    document.getElementById('counterBadge').innerText = "Completado";
+                    document.getElementById('counterBadge').classList.replace('badge-counter', 'bg-success');
+                    return;
+                } else {
+                    document.getElementById('appContainer').style.removeProperty('display');
+                    document.getElementById('appContainer').style.setProperty('display', 'block', 'important');
+                    document.getElementById('completionMessage').style.setProperty('display', 'none', 'important');
+                    document.getElementById('counterBadge').classList.replace('bg-success', 'badge-counter');
+                }
+
+                currentIndex = data.index;
+                document.getElementById('btnBack').disabled = (currentIndex === 0);
+                document.getElementById('jumpIndex').value = currentIndex + 1;
+
+                // Strip think tags for the editor
+                const thinkContent = stripThinkTags(data.hidden_think_block);
+
+                // Guardar estado original (think sin tags para restaurar)
+                originalData = {
+                    system: data.system,
+                    history: data.history,
+                    message: data.message,
+                    response: data.clean_response,
+                    think: thinkContent
+                };
+                hiddenThinkBlock = data.hidden_think_block;
+
+                // Cargar UI
+                document.getElementById('systemEditor').value = data.system;
+                document.getElementById('historyViewer').innerHTML = formatHistoryToBubbles(data.history);
+                document.getElementById('messageEditor').value = data.message;
+                document.getElementById('responseEditor').value = data.clean_response;
+                document.getElementById('counterBadge').innerText = `Interacción #${data.index + 1}`;
+
+                // Cargar think editor
+                document.getElementById('thinkEditor').value = thinkContent;
+                updateThinkCount();
+
+                // Collapse the think editor on new load
+                thinkEditorOpen = false;
+                document.getElementById('thinkEditorWrapper').classList.remove('open');
+                document.getElementById('thinkStatus').innerHTML = '<i class="bi bi-eye-slash-fill"></i> Oculto';
+                
+                // Asegurar que el scroll del historial empiece abajo
+                const historyBox = document.getElementById('historyViewer').parentElement;
+                historyBox.scrollTop = historyBox.scrollHeight;
+
+            } catch (error) {
+                console.error("Error al cargar datos:", error);
+            }
+        }
+
+        function resetField(field) {
+            if (field === 'system') document.getElementById('systemEditor').value = originalData.system;
+            if (field === 'message') document.getElementById('messageEditor').value = originalData.message;
+            if (field === 'response') document.getElementById('responseEditor').value = originalData.response;
+            if (field === 'think') {
+                document.getElementById('thinkEditor').value = originalData.think;
+                updateThinkCount();
+            }
+        }
+
+        async function goBack() {
+            if (currentIndex > 0) {
+                await setIndexAndReload(currentIndex - 1);
+            }
+        }
+
+        async function jumpTo() {
+            const val = parseInt(document.getElementById('jumpIndex').value);
+            if (!isNaN(val) && val >= 1) {
+                await setIndexAndReload(val - 1);
+            }
+        }
+
+        async function setIndexAndReload(newIndex) {
+            try {
+                const res = await fetch('/api/set_index', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ index: newIndex })
+                });
+                if (res.ok) {
+                    await loadNext();
+                }
+            } catch (error) {
+                console.error("Error al setear index", error);
+            }
+        }
+
+        async function deleteAndNext() {
+            const btn = document.querySelector('.btn-outline-danger');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+            btn.disabled = true;
+
+            const payload = {
+                index: currentIndex,
+                deleted: true
+            };
+
+            try {
+                const res = await fetch('/api/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    await loadNext(); 
+                } else {
+                    alert("Error al borrar los datos.");
+                }
+            } catch (error) {
+                alert("Error de red al intentar borrar.");
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
+
+        async function saveAndNext() {
+            const btn = document.querySelector('.btn-brand-success');
+            const originalHtml = btn.innerHTML;
+            
+            // Estado visual de carga
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Guardando...';
+            btn.disabled = true;
+
+            const payload = {
+                index: currentIndex,
+                system: document.getElementById('systemEditor').value,
+                history: originalData.history, // Read-only
+                message: document.getElementById('messageEditor').value,
+                clean_response: document.getElementById('responseEditor').value,
+                hidden_think_block: getCurrentThinkBlock()
+            };
+
+            try {
+                const res = await fetch('/api/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    await loadNext(); 
+                } else {
+                    alert("Error al guardar los datos en el servidor.");
+                }
+            } catch (error) {
+                alert("Error de red al intentar guardar.");
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
+
+        // Inicialización
+        window.onload = loadNext;
+    </script>
+</body>
+</html>

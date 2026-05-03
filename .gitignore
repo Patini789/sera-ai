@@ -1,0 +1,50 @@
+# ── Python cache ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# ── Virtual environments ─────────────────────────────────
+env/
+venv/
+.venv/
+
+# ── Godot binaries (too large for git) ───────────────────
+Godot/
+
+# ── Datasets (personal training data) ───────────────────
+datasets/dataset_raw.jsonl
+datasets/dataset_clean.jsonl
+datasets/curated/
+
+# ── Voice service dependencies ───────────────────────────
+voice_service/node_modules/
+
+# ── Temp / generated files ───────────────────────────────
+*.wav
+*.mp3
+
+# ── IDE / OS ─────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# ── Personal config (real secrets) ───────────────────────
+# Only user.* template files are tracked
+Python/env/*
+!Python/env/user..env.txt
+!Python/env/user.modelAPI.json
+!Python/env/user.bot_config.py
+!Python/env/user.user_context.json
+!Python/env/user.mcp_servers.json
+
+# ── Memory data (personal) ──────────────────────────────
+Python/packages/memory/*
+!Python/packages/memory/memory_manager.py
+!Python/packages/memory/user.memories.json
+
+# ── Test scripts ─────────────────────────────────────────
+sera_list.py

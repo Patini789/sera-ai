@@ -1,0 +1,21 @@
+{
+  "name": "seraai",
+  "version": "1.0.0",
+  "description": "Sera is a modular conversational system with long-term memory powered by embeddings.\r It's still a work in progress, but feel free to try it out if you're curious.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Patini789/SeraAI.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Patini789/SeraAI/issues"
+  },
+  "homepage": "https://github.com/Patini789/SeraAI#readme"
+}

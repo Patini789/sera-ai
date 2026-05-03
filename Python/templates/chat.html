@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sera AI - El Tomo Celestial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+        :root {
+            /* Colores de Fondo Originales */
+            --bg-gradient-1: #0a0c16;
+            --bg-gradient-2: #161122;
+            --bg-gradient-3: #1a1614;
+            
+            /* Mystical Accents */
+            --gold-primary: #d4af37;
+            --gold-light: #f3e5ab;
+            --gold-dark: #997a00;
+            --celestial-blue: #7ba3f5;
+            --celestial-purple: #b388ff;
+            --aura-glow: rgba(212, 175, 55, 0.4);
+
+            /* Text */
+            --text-main: #e8e4d9;
+            --text-muted: #a8a08c;
+
+            /* Glass Restaurado (Transparente y luminoso) */
+            --glass-bg: rgba(0, 0, 0, 0.15); 
+            --glass-border: rgba(212, 175, 55, 0.25);
+            --glass-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.3);
+
+            /* Chat */
+            --user-bubble: rgba(35, 28, 10, 0.85);
+            --bot-bubble: rgba(15, 20, 35, 0.85);
+        }
+
+        /* ----- FONDOS Y EFECTOS ATMOSFÉRICOS ----- */
+        @keyframes starryGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        body {
+            font-family: 'Lora', serif;
+            background-image: url('/static/biblioteca.jpg'),
+                linear-gradient(-45deg, var(--bg-gradient-1), var(--bg-gradient-2), var(--bg-gradient-3));
+            background-size: cover, 300% 300%;
+            background-attachment: fixed;
+            animation: starryGradient 40s ease infinite;
+            height: 100dvh;
+            margin: 0;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* Partículas Mágicas Sutiles */
+        .magic-dust {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .magic-dust::before, .magic-dust::after {
+            content: "";
+            position: absolute;
+            width: 3px; height: 3px;
+            background: transparent;
+            box-shadow: 
+                20vw 10vh 1px rgba(212, 175, 55, 0.8), 40vw 30vh 2px rgba(123, 163, 245, 0.6), 
+                60vw 20vh 1px rgba(255, 255, 255, 0.5), 80vw 60vh 2px rgba(212, 175, 55, 0.7),
+                10vw 80vh 1px rgba(179, 136, 255, 0.6), 30vw 90vh 2px rgba(255, 255, 255, 0.4),
+                90vw 15vh 1px rgba(123, 163, 245, 0.8), 70vw 85vh 2px rgba(212, 175, 55, 0.5);
+            animation: drift 100s linear infinite;
+            border-radius: 50%;
+        }
+        .magic-dust::after {
+            width: 2px; height: 2px;
+            animation-duration: 70s;
+            animation-direction: reverse;
+            box-shadow: 
+                15vw 25vh 1px rgba(212, 175, 55, 0.6), 45vw 75vh 1px rgba(123, 163, 245, 0.8), 
+                65vw 45vh 2px rgba(255, 255, 255, 0.4), 85vw 35vh 1px rgba(179, 136, 255, 0.7);
+        }
+
+        @keyframes drift {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-100vh) rotate(360deg); }
+        }
+
+        /* ----- TIPOGRAFÍA Y TÍTULOS ----- */
+        h1, h2, h3, h4, h5, h6, .font-cinzel { font-family: 'Cinzel', serif; }
+        .font-playfair { font-family: 'Playfair Display', serif; }
+
+        .title-glow {
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #ffffff; 
+            text-shadow: 0 3px 6px rgba(0,0,0,0.9), 0 0 10px rgba(212,175,55,0.4); 
+            text-transform: uppercase;
+        }
+
+        /* ----- PANELES DE CRISTAL (GLASSMORPHISM) ----- */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            box-shadow: var(--glass-shadow);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ----- SCROLLBAR MÁGICO ----- */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.4); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(212, 175, 55, 0.8); box-shadow: 0 0 10px var(--gold-primary); }
+
+        /* ----- ANIMACIONES PERSONALIZADAS ----- */
+        @keyframes compassSeek {
+            0% { transform: rotate(15deg); }
+            25% { transform: rotate(80deg); }
+            50% { transform: rotate(-40deg); }
+            75% { transform: rotate(60deg); }
+            100% { transform: rotate(15deg); }
+        }
+        .compass-seek {
+            display: inline-block;
+            animation: compassSeek 7s ease-in-out infinite;
+            transform-origin: center center;
+        }
+
+        /* ----- BURBUJAS DE BRILLO VOLUMÉTRICO ----- */
+        .glowing-bubbles {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0; overflow: hidden;
+            /* Se ha eliminado mix-blend-mode: screen para que sean visibles en fondos claros */
+        }
+        .bubble {
+            position: absolute;
+            bottom: -20vh;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--bubble-color) 10%, transparent 80%);
+            filter: blur(12px); /* Desenfoque ligeramente reducido para darle más cuerpo */
+            animation: floatUp linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.8); opacity: 0; }
+            20% { opacity: 0.85; } /* Opacidad incrementada masivamente */
+            80% { opacity: 0.65; }
+            100% { transform: translateY(-120vh) scale(1.3); opacity: 0; }
+        }
+        
+        /* Variaciones de luz con colores mucho más saturados y opacos */
+        .bubble:nth-child(1) { left: 10%; width: 150px; height: 150px; --bubble-color: rgba(212, 175, 55, 0.85); animation-duration: 25s; animation-delay: 0s; }
+        .bubble:nth-child(2) { left: 25%; width: 250px; height: 250px; --bubble-color: rgba(179, 136, 255, 0.75); animation-duration: 35s; animation-delay: 5s; }
+        .bubble:nth-child(3) { left: 40%; width: 120px; height: 120px; --bubble-color: rgba(212, 175, 55, 0.9); animation-duration: 20s; animation-delay: 2s; }
+        .bubble:nth-child(4) { left: 60%; width: 200px; height: 200px; --bubble-color: rgba(179, 136, 255, 0.8); animation-duration: 30s; animation-delay: 8s; }
+        .bubble:nth-child(5) { left: 75%; width: 160px; height: 160px; --bubble-color: rgba(212, 175, 55, 0.85); animation-duration: 28s; animation-delay: 1s; }
+        .bubble:nth-child(6) { left: 85%; width: 280px; height: 280px; --bubble-color: rgba(179, 136, 255, 0.65); animation-duration: 40s; animation-delay: 12s; }
+        .bubble:nth-child(7) { left: 15%; width: 180px; height: 180px; --bubble-color: rgba(179, 136, 255, 0.75); animation-duration: 32s; animation-delay: 15s; }
+        .bubble:nth-child(8) { left: 50%; width: 100px; height: 100px; --bubble-color: rgba(212, 175, 55, 0.95); animation-duration: 22s; animation-delay: 18s; }
+        .bubble:nth-child(9) { left: 90%; width: 190px; height: 190px; --bubble-color: rgba(212, 175, 55, 0.85); animation-duration: 27s; animation-delay: 7s; }
+        .bubble:nth-child(10) { left: 35%; width: 220px; height: 220px; --bubble-color: rgba(179, 136, 255, 0.7); animation-duration: 38s; animation-delay: 4s; }
+
+        @keyframes gentleThink {
+            0% { transform: scale(0.95); filter: drop-shadow(0 0 2px rgba(179, 136, 255, 0.4)); color: var(--celestial-purple); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 12px rgba(179, 136, 255, 0.9)); color: #d4bfff; }
+            100% { transform: scale(0.95); filter: drop-shadow(0 0 2px rgba(179, 136, 255, 0.4)); color: var(--celestial-purple); }
+        }
+        .brain-thinking {
+            display: inline-block;
+            animation: gentleThink 1.5s ease-in-out infinite;
+        }
+
+        /* ----- ORBE DE SERA (ASTROLABIO 3D BRILLANTE) ----- */
+        .celestial-showcase {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 1rem; position: relative;
+            overflow: hidden; 
+            min-height: 140px; 
+        }
+        
+        .celestial-core-container {
+            position: relative;
+            width: 80px; height: 80px; 
+            margin-bottom: 1rem;
+            perspective: 800px;
+            transform-style: preserve-3d;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            background: transparent;
+            border-radius: 50%;
+        }
+
+        .astrolabe-ring {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 2px solid rgba(212, 175, 55, 0.4);
+            border-radius: 50%;
+            transform-style: preserve-3d;
+        }
+
+        .ring-1 { 
+            border-top: 3px solid rgba(255, 234, 140, 1); 
+            border-bottom: 3px solid rgba(255, 234, 140, 1);
+            filter: drop-shadow(0 0 8px #ffcc00);
+            animation: spinX 12s linear infinite; 
+        }
+        .ring-2 { 
+            border-left: 3px solid rgba(163, 194, 255, 1); 
+            border-right: 3px solid rgba(163, 194, 255, 1);
+            filter: drop-shadow(0 0 8px var(--celestial-blue));
+            width: 80%; height: 80%; margin: 10%;
+            animation: spinY 15s linear infinite reverse; 
+        }
+        .ring-3 { 
+            border: 2px dashed rgba(214, 179, 255, 1);
+            filter: drop-shadow(0 0 8px var(--celestial-purple));
+            width: 60%; height: 60%; margin: 20%;
+            animation: spinZ 10s linear infinite; 
+        }
+
+        /* NÚCLEO SÓLIDO (Sin gradientes transparentes que causen manchas oscuras) */
+        .core-star {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px; height: 24px;
+            background-color: #ffffff; /* Sólido puro */
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 
+                0 0 20px 5px rgba(255, 204, 0, 0.8),
+                0 0 40px 15px rgba(255, 204, 0, 0.4),
+                inset 0 0 10px rgba(255, 204, 0, 0.8);
+            animation: coreBreath 4s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        /* Estado "Generando" (Reactivo) */
+        .celestial-core-container.generating { transform: scale(1.15); }
+        .celestial-core-container.generating .ring-1 { animation-duration: 3s; border-color: var(--celestial-purple); filter: drop-shadow(0 0 12px var(--celestial-purple)); }
+        .celestial-core-container.generating .ring-2 { animation-duration: 4s; border-color: #ffe066; filter: drop-shadow(0 0 12px #ffcc00); }
+        .celestial-core-container.generating .ring-3 { animation-duration: 2s; border-style: solid; border-color: #fff; filter: drop-shadow(0 0 12px #fff); }
+        .celestial-core-container.generating .core-star {
+            background-color: #ffffff;
+            border-color: #fff;
+            box-shadow: 
+                0 0 25px 8px rgba(179, 136, 255, 0.9), 
+                0 0 50px 20px rgba(179, 136, 255, 0.5), 
+                inset 0 0 15px rgba(179, 136, 255, 0.9);
+            animation: corePulseRapid 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes spinX { 100% { transform: rotateX(360deg) rotateY(180deg); } }
+        @keyframes spinY { 100% { transform: rotateY(360deg) rotateZ(180deg); } }
+        @keyframes spinZ { 100% { transform: rotateZ(360deg) rotateX(180deg); } }
+        @keyframes coreBreath {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+        }
+        @keyframes corePulseRapid {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+            100% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; filter: brightness(1.3); }
+        }
+
+        /* ----- CONTROLES E INTERRUPTORES (RUNAS) ----- */
+        .control-item {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            padding: 0.7rem 1.2rem;
+            border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .control-item::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(212,175,55,0.15), transparent);
+            transform: skewX(-20deg); transition: 0.5s;
+        }
+        .control-item:hover {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: rgba(212, 175, 55, 0.4);
+            transform: translateX(4px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .control-item:hover::before { left: 150%; }
+
+        /* Custom Switch */
+        .form-switch { padding-left: 0; margin-bottom: 0; }
+        .form-switch .form-check-input {
+            width: 48px; height: 26px;
+            margin-left: 0;
+            background-image: none !important;
+            background-color: rgba(0,0,0,0.6);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .form-switch .form-check-input::after {
+            content: '\f0d0';
+            font-family: 'Font Awesome 6 Free'; font-weight: 900;
+            position: absolute; 
+            top: 50%; left: 3px;
+            transform: translateY(-50%); 
+            width: 16px; height: 16px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; color: #111;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            line-height: 1; 
+        }
+        .form-switch .form-check-input:checked {
+            background-color: rgba(212, 175, 55, 0.25);
+            border-color: var(--gold-primary);
+            box-shadow: inset 0 0 15px rgba(212, 175, 55, 0.5), 0 0 15px var(--aura-glow);
+        }
+        .form-switch .form-check-input:checked::after {
+            transform: translate(22px, -50%);
+            background: var(--gold-primary);
+            color: #fff;
+            text-shadow: 0 0 5px #fff;
+            box-shadow: 0 0 10px var(--gold-light), 0 0 20px var(--gold-primary);
+            content: '\f0e7';
+        }
+
+        /* ----- ÁREA DE CHAT ----- */
+        .chat-container {
+            display: flex; flex-direction: column; height: 100%; min-height: 0; position: relative;
+        }
+        #chat-log {
+            flex-grow: 1; overflow-y: auto; overflow-x: hidden;
+            padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem;
+        }
+
+        .chat-wrapper {
+            display: flex; width: 100%; flex-shrink: 0;
+            animation: messageEnter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0; transform: translateY(15px);
+        }
+        @keyframes messageEnter {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-user-wrapper { justify-content: flex-end; }
+        .chat-bot-wrapper { justify-content: flex-start; }
+
+        .chat-msg {
+            max-width: 85%;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            position: relative;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+        }
+
+        .msg-user {
+            background: var(--user-bubble);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-bottom-right-radius: 4px;
+            color: #ffffff;
+        }
+
+        .msg-bot {
+            background: var(--bot-bubble);
+            border: 1px solid rgba(123, 163, 245, 0.4);
+            border-bottom-left-radius: 4px;
+            color: #e6e9f5;
+        }
+
+        .msg-header {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.85rem; margin-bottom: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1.5px;
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Bloque de Pensamiento (Think) */
+        .think-block {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(179, 136, 255, 0.3);
+            border-left: 3px solid var(--celestial-purple);
+            border-radius: 8px;
+            margin: 8px 0 16px 0;
+            padding: 10px 14px;
+            transition: all 0.3s;
+            box-shadow: inset 0 0 15px rgba(179, 136, 255, 0.1);
+        }
+        .think-block summary {
+            cursor: pointer; font-weight: 600; outline: none; user-select: none;
+            color: var(--celestial-purple); font-family: 'Cinzel', serif; letter-spacing: 1px;
+            display: flex; align-items: center; gap: 8px;
+            list-style: none;
+        }
+        .think-block summary::-webkit-details-marker { display: none; }
+        .think-block summary::before {
+            content: '\f0da'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+            transition: transform 0.3s;
+        }
+        .think-block[open] summary::before { transform: rotate(90deg); }
+        
+        .think-block .think-content {
+            color: rgba(255, 255, 255, 0.75);
+            margin-top: 10px; padding-top: 10px;
+            border-top: 1px dashed rgba(179, 136, 255, 0.3);
+            font-size: 0.9em; font-style: italic; line-height: 1.5;
+            max-height: 250px; overflow-y: auto;
+        }
+        .think-block.think-finished { border-left-color: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.15); }
+        .think-block.think-finished summary { color: var(--text-muted); }
+
+        /* ----- ACTIVE USERS BUBBLES ----- */
+        .active-users-container {
+            position: absolute;
+            bottom: 95px; /* Perfectamente situado sobre la caja de input */
+            right: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        .user-bubble {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: rgba(20, 15, 5, 0.9); border: 2px solid var(--gold-primary);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--gold-primary); font-family: 'Cinzel', serif; font-weight: bold; font-size: 14px;
+            box-shadow: 0 0 12px var(--aura-glow); backdrop-filter: blur(5px);
+            animation: floatBubble 3s ease-in-out infinite; pointer-events: auto;
+            position: relative;
+            cursor: pointer;
+        }
+        .user-bubble:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.6);
+        }
+        /* El punto verde de actividad */
+        .user-bubble::after {
+            content: ''; position: absolute; bottom: -2px; right: -2px;
+            width: 12px; height: 12px; background: #4cd137;
+            border: 2px solid #1a1614; border-radius: 50%;
+            box-shadow: 0 0 5px #4cd137;
+        }
+        /* Tooltip con el nombre completo */
+        .user-bubble[data-name]:hover::before {
+            content: attr(data-name); position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9); color: #fff; padding: 5px 12px; border-radius: 6px;
+            font-size: 13px; white-space: nowrap; border: 1px solid rgba(212, 175, 55, 0.5);
+            pointer-events: none; font-family: 'Lora', serif; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        /* ----- INPUT AREA ----- */
+        .input-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.2rem;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .chat-input-custom {
+            background: rgba(0, 0, 0, 0.5) !important;
+            border: 1px solid rgba(212, 175, 55, 0.3) !important;
+            color: var(--text-main) !important;
+            border-radius: 12px 0 0 12px !important;
+            padding: 14px 20px;
+            font-size: 1.05rem;
+            transition: all 0.3s;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+        }
+        .chat-input-custom:focus {
+            border-color: var(--gold-primary) !important;
+            box-shadow: 0 0 15px var(--aura-glow), inset 0 2px 8px rgba(0,0,0,0.5) !important;
+            background: rgba(15, 10, 5, 0.7) !important;
+            outline: none;
+        }
+        .chat-input-custom::placeholder { color: rgba(255,255,255,0.4); }
+
+        .btn-send {
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary));
+            color: var(--bg-void);
+            font-weight: 700;
+            border-radius: 0 12px 12px 0 !important;
+            padding: 0 24px;
+            border: none;
+            transition: all 0.3s ease;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+        }
+        .btn-send:hover:not(:disabled) {
+            box-shadow: 0 0 20px var(--gold-primary);
+            transform: translateY(-1px);
+            color: #000;
+            filter: brightness(1.2);
+        }
+        .btn-send:active:not(:disabled) { transform: translateY(0); }
+
+        /* ----- OFFCANVAS Y MENÚS ----- */
+        .offcanvas { background: rgba(10, 8, 15, 0.90); backdrop-filter: blur(15px); border-color: var(--gold-primary); }
+        .btn-menu-settings {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--gold-primary);
+            /* Modificado: Contraste celestial estilo título */
+            color: #ffffff;
+            font-weight: 700;
+            text-shadow: 0 3px 6px rgba(0,0,0,0.9), 0 0 10px rgba(212,175,55,0.4);
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-family: 'Cinzel', serif;
+            transition: all 0.3s;
+        }
+        .btn-menu-settings i {
+            color: var(--gold-light);
+            text-shadow: 0 3px 6px rgba(0,0,0,0.9);
+        }
+        .btn-menu-settings:hover {
+            background: var(--gold-primary);
+            color: var(--bg-void);
+            text-shadow: none;
+            box-shadow: 0 0 15px var(--aura-glow);
+        }
+        .btn-menu-settings:hover i {
+            color: var(--bg-void);
+            text-shadow: none;
+        }
+
+        .username-field {
+            background: transparent !important; border: none !important;
+            /* Modificado: Contraste celestial estilo título */
+            color: #ffffff !important; 
+            font-weight: 700;
+            text-shadow: 0 3px 6px rgba(0,0,0,0.9), 0 0 10px rgba(212,175,55,0.4);
+            font-family: 'Cinzel', serif; letter-spacing: 1px;
+            text-align: right; width: 120px;
+            padding: 0;
+        }
+        .username-field:focus { box-shadow: none; border-bottom: 1px solid var(--gold-primary) !important; border-radius: 0; }
+        .username-field::placeholder { 
+            color: rgba(255,255,255,0.5); 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            font-weight: 400;
+        }
+
+    </style>
+</head>
+
+<body class="p-2 p-md-3 d-flex flex-column">
+
+    <!-- Polvo mágico de fondo -->
+    <div class="magic-dust"></div>
+
+    <!-- Burbujas de Brillo Dinámico (Blend mode: screen para luces perfectas) -->
+    <div class="glowing-bubbles">
+        <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+        <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+        <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+        <div class="bubble"></div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="d-flex align-items-center justify-content-between mb-3 flex-shrink-0 px-2 position-relative z-index-2">
+        <h1 class="title-glow m-0 fs-4 d-flex align-items-center gap-2">
+            <div style="background: rgba(0, 0, 0, 0.7); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--glass-border); box-shadow: 0 4px 8px rgba(0,0,0,0.8);">
+                <i class="fa-solid fa-book-journal-whills" style="color: var(--gold-light);"></i>
+            </div>
+            <span class="d-none d-sm-inline">Biblioteca de Sera</span>
+            <span class="d-inline d-sm-none" style="font-size: 1.2rem;">Sera AI</span>
+        </h1>
+
+        <button class="btn btn-menu-settings d-flex align-items-center gap-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#settingsSidebar">
+            <i class="fa-solid fa-feather-pointed"></i> <span class="d-none d-sm-inline">Grimorio</span>
+        </button>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <div class="row g-3 flex-grow-1 m-0 w-100 position-relative z-index-2" style="min-height: 0;">
+
+        <!-- PANEL IZQUIERDO (Desktop) -->
+        <div class="col-lg-4 d-none d-lg-flex flex-column gap-3 pb-2" style="min-height: 0;">
+            
+            <!-- Artes Místicas -->
+            <div class="glass-panel p-3 flex-shrink-0">
+                <h3 class="h6 mb-3 d-flex align-items-center gap-2 font-cinzel" style="color: var(--gold-primary); text-shadow: 0 0 8px var(--aura-glow);">
+                    <i class="fa-solid fa-compass compass-seek" style="color: var(--gold-primary);"></i> Artes Místicas
+                </h3>
+                <div class="d-flex flex-column gap-2">
+                    <div class="control-item">
+                        <span class="fw-semibold"><i class="fa-solid fa-star me-2" style="color:var(--gold-light)"></i> Gemini</span>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="t-gemini" onchange="updateToggles()"></div>
+                    </div>
+                    <div class="control-item">
+                        <span class="fw-semibold"><i class="fa-solid fa-wind me-2" style="color:#a8c0ff"></i> Voz</span>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="t-voice" onchange="updateToggles()"></div>
+                    </div>
+                    <div class="control-item">
+                        <span class="fw-semibold"><i class="fa-solid fa-scroll me-2" style="color:#e6c27a"></i> Inscribir Memoria</span>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="t-create-mem" onchange="updateToggles()"></div>
+                    </div>
+                    <div class="control-item">
+                        <span class="fw-semibold"><i class="fa-solid fa-monument me-2" style="color:#b5a695"></i> Leer Archivos</span>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="t-use-mem" onchange="updateToggles()"></div>
+                    </div>
+                    <div class="control-item">
+                        <span class="fw-semibold"><i class="fa-solid fa-brain me-2" style="color:var(--celestial-purple)"></i> Silenciar Pensamientos</span>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="t-no-think" onchange="updateToggles()"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orbe (Sera Llamada) -->
+            <div class="glass-panel celestial-showcase flex-grow-1 text-center">
+                <div class="celestial-core-container" id="sera-orb-desktop">
+                    <div class="astrolabe-ring ring-1"></div>
+                    <div class="astrolabe-ring ring-2"></div>
+                    <div class="astrolabe-ring ring-3"></div>
+                    <div class="core-star"></div>
+                </div>
+                <h5 class="font-cinzel text-white mt-2 mb-1" style="letter-spacing: 1.5px; text-shadow: 0 0 8px rgba(255,255,255,0.4);">sera llamada</h5>
+                <p class="text-muted small font-playfair mb-0" style="font-style: italic; font-size: 0.85rem;" id="sera-status-desktop">Aguardando invocación...</p>
+            </div>
+        </div>
+
+        <!-- PANEL DERECHO (Chat) -->
+        <div class="col-12 col-lg-8 pb-2" style="height: 100%; min-height: 0;">
+            <div class="glass-panel chat-container">
+                
+                <!-- Chat Header -->
+                <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center flex-wrap" style="border-color: rgba(255,255,255,0.1) !important; background: rgba(0,0,0,0.3);">
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn d-lg-none p-1 px-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileLeftMenu" style="background: rgba(212, 175, 55, 0.15); border: 1px solid var(--gold-primary); color: var(--gold-primary); border-radius: 8px;">
+                            <i class="fa-solid fa-compass"></i>
+                        </button>
+                        <h4 class="h6 mb-0 text-white font-cinzel d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-meteor" style="color: var(--gold-primary);"></i>
+                            Canal: Sera
+                        </h4>
+                    </div>
+
+                    <!-- Usuario Input -->
+                    <div class="d-flex align-items-center gap-2 px-2 py-1" style="background: rgba(0,0,0,0.5); border-radius: 6px; border: 1px solid rgba(212, 175, 55, 0.3);">
+                        <i class="fa-solid fa-feather-pointed" style="color: var(--gold-light); text-shadow: 0 2px 4px rgba(0,0,0,0.9); font-size: 0.8rem;"></i>
+                        <input type="text" id="username-input" class="form-control form-control-sm username-field" value="Viajero" placeholder="Tu Nombre" autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- Chat Log -->
+                <div id="chat-log"></div>
+
+                <!-- Contenedor de usuarios activos -->
+                <div id="active-users-bubbles" class="active-users-container"></div>
+
+                <!-- Input Area -->
+                <div class="input-area mt-auto flex-shrink-0">
+                    <div class="input-group shadow-lg">
+                        <input type="text" id="chat-input" class="form-control chat-input-custom" placeholder="Inscribe tus palabras..." autocomplete="on">
+                        <button class="btn btn-send" id="send-btn" type="button">
+                            <i class="fa-solid fa-pen-nib me-2 d-none d-sm-inline"></i> Plasmar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OFFCANVAS MÓVIL (Artes Místicas) -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileLeftMenu">
+        <div class="offcanvas-header border-bottom px-4 py-3" style="border-color: rgba(212,175,55,0.2) !important;">
+            <h5 class="offcanvas-title font-cinzel d-flex align-items-center gap-2" style="color: var(--gold-primary);">
+                <i class="fa-solid fa-compass compass-seek"></i> Artes Místicas
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column gap-3 p-3">
+            
+            <div class="celestial-showcase text-center mb-3 p-3 rounded" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(212,175,55,0.2); min-height: auto;">
+                <div class="celestial-core-container mx-auto" id="sera-orb-mobile" style="width: 70px; height: 70px;">
+                    <div class="astrolabe-ring ring-1"></div>
+                    <div class="astrolabe-ring ring-2"></div>
+                    <div class="astrolabe-ring ring-3"></div>
+                    <div class="core-star"></div>
+                </div>
+                <h6 class="font-cinzel text-white mt-2 mb-0">Sera</h6>
+            </div>
+
+            <div class="control-item"><span class="fw-semibold"><i class="fa-solid fa-star me-2"></i> Gemini</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="tm-gemini" onchange="updateToggles(true)"></div></div>
+            <div class="control-item"><span class="fw-semibold"><i class="fa-solid fa-wind me-2"></i> Voz</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="tm-voice" onchange="updateToggles(true)"></div></div>
+            <div class="control-item"><span class="fw-semibold"><i class="fa-solid fa-scroll me-2"></i> Inscribir</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="tm-create-mem" onchange="updateToggles(true)"></div></div>
+            <div class="control-item"><span class="fw-semibold"><i class="fa-solid fa-monument me-2"></i> Leer</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="tm-use-mem" onchange="updateToggles(true)"></div></div>
+            <div class="control-item"><span class="fw-semibold"><i class="fa-solid fa-brain me-2"></i> Silenciar</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="tm-no-think" onchange="updateToggles(true)"></div></div>
+        </div>
+    </div>
+
+    <!-- OFFCANVAS DERECHO (Grimorio / Ajustes) -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="settingsSidebar">
+        <div class="offcanvas-header border-bottom px-4 py-3" style="border-color: rgba(212,175,55,0.2) !important;">
+            <h5 class="offcanvas-title font-cinzel d-flex align-items-center gap-2" style="color: var(--gold-primary);">
+                <i class="fa-solid fa-book-journal-whills"></i> Grimorio de Leyes
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column p-4">
+            <div class="mb-4 flex-grow-1 d-flex flex-column">
+                <label class="form-label font-cinzel text-uppercase" style="color: var(--gold-light); letter-spacing: 1px;"><i class="fa-solid fa-scroll me-2"></i> Mandato Primordial</label>
+                <textarea id="prompt-box" class="form-control flex-grow-1 p-3 mt-2" spellcheck="false" placeholder="Escribe las directrices divinas aquí..." style="background: rgba(10,10,15,0.6); border: 1px solid rgba(212,175,55,0.3); color: #fff; border-radius: 10px; resize: none; font-family: 'Lora';"></textarea>
+            </div>
+            <button id="save-btn" class="btn w-100 py-3 mt-auto font-cinzel fw-bold" type="button" style="background: rgba(212,175,55,0.15); border: 1px solid var(--gold-primary); color: var(--gold-primary); transition: 0.3s; border-radius: 10px;">
+                <i class="fa-solid fa-stamp me-2"></i> Sellar Directriz
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentBotContainer = null;
+        let accumulatedTokens = "";
+        let eventSource = null;
+        let myClientId = Math.random().toString(36).substring(2, 15);
+
+        // Referencias
+        const orbs = [document.getElementById('sera-orb-desktop'), document.getElementById('sera-orb-mobile')];
+        const statusText = document.getElementById('sera-status-desktop');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('/api/state');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('t-gemini').checked = !!data.gemini_enable;
+                    document.getElementById('t-voice').checked = !!data.voice_active;
+                    document.getElementById('t-create-mem').checked = !!data.create_memories;
+                    document.getElementById('t-use-mem').checked = !!data.use_memories;
+                    document.getElementById('t-no-think').checked = !!data.disable_thinking;
+
+                    document.getElementById('tm-gemini').checked = !!data.gemini_enable;
+                    document.getElementById('tm-voice').checked = !!data.voice_active;
+                    document.getElementById('tm-create-mem').checked = !!data.create_memories;
+                    document.getElementById('tm-use-mem').checked = !!data.use_memories;
+                    document.getElementById('tm-no-think').checked = !!data.disable_thinking;
+
+                    document.getElementById('prompt-box').value = data.instructions || '';
+                }
+                appendSystemLog('Conexión con los registros akáshicos establecida.');
+            } catch (e) {
+                appendSystemLog('Las estrellas están nubladas. No se pudo leer el estado.');
+            }
+
+            const userInp = document.getElementById('username-input');
+            const savedName = localStorage.getItem('seraUserName');
+            if (savedName) userInp.value = savedName;
+
+            userInp.addEventListener('input', () => {
+                const val = userInp.value.trim() || 'Viajero';
+                localStorage.setItem('seraUserName', val);
+                fetch('/api/presence', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: myClientId, name: val })
+                }).catch(e => {});
+            });
+
+            document.getElementById('chat-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
+            document.getElementById('send-btn').addEventListener('click', sendMessage);
+            document.getElementById('save-btn').addEventListener('click', savePrompt);
+
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.addEventListener('mouseover', () => { saveBtn.style.background = 'var(--gold-primary)'; saveBtn.style.color = '#000'; saveBtn.style.boxShadow = '0 0 20px var(--aura-glow)'; });
+            saveBtn.addEventListener('mouseout', () => { saveBtn.style.background = 'rgba(212,175,55,0.15)'; saveBtn.style.color = 'var(--gold-primary)'; saveBtn.style.boxShadow = 'none'; });
+
+            connectSSE();
+        });
+
+        function connectSSE() {
+            let username = document.getElementById('username-input').value.trim() || 'Viajero';
+            eventSource = new EventSource(`/api/stream?id=${myClientId}&name=${encodeURIComponent(username)}`);
+            
+            eventSource.addEventListener('active_users', (e) => {
+                const users = JSON.parse(e.data);
+                renderActiveUsers(users);
+            });
+
+            eventSource.addEventListener('history', (e) => {
+                const data = JSON.parse(e.data);
+                document.getElementById('chat-log').innerHTML = '';
+                data.history.forEach(msg => {
+                    if (msg.type === "user") appendUserLog(msg.author, msg.text);
+                    else if (msg.type === "bot") {
+                        createBotWrapper();
+                        renderStreamContent(currentBotContainer, msg.text, true);
+                    }
+                });
+                setUIState(data.is_generating);
+                if (data.is_generating) {
+                    createBotWrapper();
+                    accumulatedTokens = data.current_gen || "";
+                    if (accumulatedTokens) renderStreamContent(currentBotContainer, accumulatedTokens, false);
+                }
+            });
+
+            eventSource.addEventListener('user_msg', (e) => {
+                const data = JSON.parse(e.data);
+                appendUserLog(data.author, data.text);
+            });
+
+            eventSource.addEventListener('start_gen', (e) => {
+                setUIState(true);
+                createBotWrapper();
+                accumulatedTokens = "";
+            });
+
+            eventSource.addEventListener('token', (e) => {
+                const data = JSON.parse(e.data);
+                if (currentBotContainer) {
+                    accumulatedTokens += data.token;
+                    renderStreamContent(currentBotContainer, accumulatedTokens, false);
+                    autoScroll();
+                }
+            });
+
+            eventSource.addEventListener('end_gen', (e) => {
+                if (currentBotContainer) renderStreamContent(currentBotContainer, accumulatedTokens, true);
+                setUIState(false);
+            });
+
+            eventSource.addEventListener('clear', (e) => {
+                document.getElementById('chat-log').innerHTML = '';
+                setUIState(false);
+            });
+        }
+
+        function setUIState(isGenerating) {
+            const input = document.getElementById('chat-input');
+            const btn = document.getElementById('send-btn');
+            
+            if (isGenerating) {
+                input.disabled = true;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-atom fa-spin"></i> Manifestando...';
+                orbs.forEach(orb => orb && orb.classList.add('generating'));
+                if(statusText) statusText.innerText = "Tejiendo la realidad...";
+            } else {
+                input.disabled = false;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-pen-nib me-2 d-none d-sm-inline"></i> Plasmar';
+                input.focus();
+                orbs.forEach(orb => orb && orb.classList.remove('generating'));
+                if(statusText) statusText.innerText = "Aguardando invocación...";
+            }
+        }
+
+        function autoScroll() {
+            const log = document.getElementById('chat-log');
+            if (log.scrollHeight - log.scrollTop - log.clientHeight < 150) {
+                log.scrollTop = log.scrollHeight;
+            }
+        }
+
+        function appendSystemLog(text) {
+            const log = document.getElementById('chat-log');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chat-wrapper justify-content-center';
+            wrapper.innerHTML = `<div class="chat-msg" style="background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15); color: var(--gold-light); font-size: 0.85rem; font-style: italic; padding: 8px 16px; border-radius: 20px; box-shadow: 0 0 10px rgba(212,175,55,0.15);"><i class="fa-solid fa-sparkles me-2"></i>${text}</div>`;
+            log.appendChild(wrapper);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function appendUserLog(author, text) {
+            const log = document.getElementById('chat-log');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chat-wrapper chat-user-wrapper';
+            const safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+            
+            wrapper.innerHTML = `
+                <div class="chat-msg msg-user">
+                    <div class="msg-header justify-content-end text-end" style="color: var(--gold-primary);">
+                        ${author} <i class="fa-solid fa-feather ms-1"></i>
+                    </div>
+                    <div>${safeText}</div>
+                </div>
+            `;
+            log.appendChild(wrapper);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function createBotWrapper() {
+            const log = document.getElementById('chat-log');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chat-wrapper chat-bot-wrapper';
+            wrapper.innerHTML = `
+                <div class="chat-msg msg-bot w-100">
+                    <div class="msg-header" style="color: var(--celestial-blue);">
+                        <i class="fa-solid fa-meteor me-1"></i> Sera
+                    </div>
+                    <div class="msg-content w-100"></div>
+                </div>
+            `;
+            log.appendChild(wrapper);
+            log.scrollTop = log.scrollHeight;
+            currentBotContainer = wrapper.querySelector('.msg-content');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            let authorName = document.getElementById('username-input').value.trim() || "Viajero";
+            if (!text) return;
+
+            input.value = '';
+            setUIState(true);
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, author: authorName })
+                });
+            } catch (err) {
+                appendSystemLog('La magia se disipó. Error al enviar.');
+                setUIState(false);
+            }
+        }
+
+        // --- SISTEMA DE RENDERIZADO CON REGEX ---
+        function renderStreamContent(container, raw, isFinal) {
+            let thinkScroll = -1;
+            const existingThink = container.querySelector('.think-content');
+            if (existingThink) {
+                const isInnerNearBottom = existingThink.scrollHeight - existingThink.scrollTop - existingThink.clientHeight < 50;
+                thinkScroll = isInnerNearBottom ? -1 : existingThink.scrollTop;
+            }
+
+            const thinkMatch = raw.match(/<think>([\s\S]*?)(<\/think>|$)/);
+            let thinkContent = "";
+            let cleanText = raw;
+
+            if (thinkMatch) {
+                thinkContent = thinkMatch[1].trim();
+                const thinkClosed = raw.includes("</think>");
+                cleanText = raw.replace(/<think>[\s\S]*?(<\/think>|$)/, '').trim();
+
+                // Remove lmstudio_tools tags
+                cleanText = cleanText.replace(/<lmstudio_tools>[\s\S]*?(<\/lmstudio_tools>|$)/, '').trim();
+
+                const safeThink = thinkContent.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+                const safePart = cleanText.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+
+                if (isFinal || thinkClosed) {
+                    container.innerHTML = `
+                        <details class="think-block think-finished mb-2">
+                            <summary style="color: var(--text-muted);"><i class="fa-solid fa-brain me-2"></i>Ecos de Pensamiento <span style="font-weight:normal;opacity:0.6;font-size:0.9em;margin-left:auto;">— completado</span></summary>
+                            <div class="think-content mt-2 text-muted" style="max-height: 250px; overflow-y: auto; font-size: 0.9em; font-style: italic; border-top: 1px dashed rgba(179, 136, 255, 0.3); padding-top: 10px;">
+                                ${safeThink}
+                            </div>
+                        </details>
+                        <div class="text-content mt-2">${safePart}</div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <details class="think-block mb-2" open>
+                            <summary style="color: var(--celestial-purple);"><i class="fa-solid fa-brain brain-thinking me-2"></i>Proceso Cognitivo <span style="font-weight:normal;opacity:0.6;font-size:0.9em;color:rgba(255,255,255,0.5);margin-left:auto;">— canalizando...</span></summary>
+                            <div class="think-content mt-2 text-muted" style="max-height: 250px; overflow-y: auto; font-size: 0.9em; font-style: italic; border-top: 1px dashed rgba(179, 136, 255, 0.3); padding-top: 10px;">
+                                ${safeThink}
+                            </div>
+                        </details>
+                        <div class="text-content mt-2">${safePart}</div>
+                    `;
+                }
+                
+                const newThink = container.querySelector('.think-content');
+                if (newThink) {
+                    if (thinkScroll === -1) {
+                        newThink.scrollTop = newThink.scrollHeight;
+                    } else {
+                        newThink.scrollTop = thinkScroll;
+                    }
+                }
+                return;
+            }
+
+            // No think tags — just render text
+            cleanText = cleanText.replace(/<lmstudio_tools>[\s\S]*?(<\/lmstudio_tools>|$)/, '').trim();
+            const safeText = cleanText.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+            container.innerHTML = `<div class="text-content mt-2">${safeText}</div>`;
+        }
+
+        function renderActiveUsers(users) {
+            const container = document.getElementById('active-users-bubbles');
+            container.innerHTML = '';
+            users.forEach((name, i) => {
+                const initial = name.charAt(0).toUpperCase();
+                const bubble = document.createElement('div');
+                bubble.className = 'user-bubble';
+                bubble.innerText = initial;
+                bubble.dataset.name = name; 
+                container.appendChild(bubble);
+            });
+        }
+
+        async function updateToggles(isMobile=false) {
+            const prefix = isMobile ? 'tm-' : 't-';
+            const otherPrefix = isMobile ? 't-' : 'tm-';
+            const payload = {
+                gemini_enable: document.getElementById(prefix+'gemini').checked,
+                voice_active: document.getElementById(prefix+'voice').checked,
+                create_memories: document.getElementById(prefix+'create-mem').checked,
+                use_memories: document.getElementById(prefix+'use-mem').checked,
+                disable_thinking: document.getElementById(prefix+'no-think').checked
+            };
+
+            document.getElementById(otherPrefix+'gemini').checked = payload.gemini_enable;
+            document.getElementById(otherPrefix+'voice').checked = payload.voice_active;
+            document.getElementById(otherPrefix+'create-mem').checked = payload.create_memories;
+            document.getElementById(otherPrefix+'use-mem').checked = payload.use_memories;
+            document.getElementById(otherPrefix+'no-think').checked = payload.disable_thinking;
+            
+            try { await fetch('/api/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); } 
+            catch (e) {}
+        }
+
+        async function savePrompt() {
+            const btn = document.getElementById('save-btn');
+            const text = document.getElementById('prompt-box').value;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Sellando Pacto...';
+
+            try { await fetch('/api/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instructions: text }) }); } 
+            catch (e) {}
+
+            btn.innerHTML = '<i class="fa-solid fa-check-double me-2"></i> ¡Pacto Sellado!';
+            btn.style.background = 'var(--gold-primary)';
+            btn.style.color = '#000';
+            setTimeout(() => { btn.innerHTML = originalHTML; btn.style.background = 'rgba(212,175,55,0.15)'; btn.style.color = 'var(--gold-primary)'; }, 2000);
+        }
+    </script>
+</body>
+</html>

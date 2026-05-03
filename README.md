@@ -245,6 +245,8 @@ Sera is not just text; she exists in 3D space and interacts with game environmen
   <em>"Wait, I have to judge a game?!"</em>
 </div>
 
+#
+
 > 🚧 **WIP / Disclaimer:** The Godot clients showcased below (Pet, 3D Avatar, and Desktop Companion) are currently in active development and will be released in the future. Right now, this repository includes the complete backend foundation: Sera already successfully streams real-time LipSync data and receives external game inputs via WebSocket, ready to connect to these upcoming frontends!
 
 ### 🐾 Upcoming: Pet Sera
@@ -258,6 +260,7 @@ https://github.com/user-attachments/assets/6ed454ff-212f-4003-8df9-93a2cff07600
 ### 💻 Future Release: Companion Desktop
 
 https://github.com/user-attachments/assets/545e8365-a327-471a-8726-e4f57de99afa
+
 ---
 
 ## 🤖 Discord Bot

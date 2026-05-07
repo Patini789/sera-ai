@@ -15,12 +15,20 @@
 
 <img src="assets/banner.jpg" width="100%" alt="Sera Banner">
 <br><br>
-*Sera is an AI companion framework designed for extensibility. It supports cloud and local LLMs, remembers past conversations through vector embeddings, calls external tools via MCP, and connects to Discord, Godot, and a custom Web UI — all from a single orchestrator.*
+*Inspired by AI VTubers like Neuro-sama, Sera is an AI companion framework designed for extensibility. It goes beyond a simple text chatbot by acting as a fully integrated assistant that supports cloud and local LLMs, remembers past conversations through vector embeddings, calls external tools via MCP, and connects to Discord, Godot, and a custom Web UI — all from a single orchestrator.*
 
 </div>
 
 ---
-
+## Table of Contents
+* [Features](#features)
+* [Setup](#setup)
+* [Architecture](#architecture)
+* [Tech Stack](#tech-stack)
+* [Web UI](#web-ui)
+* [3D Avatar & Game Integration](#3d-avatar--game-integration)
+* [Training Data Pipeline](#training-data-pipeline)
+---
 ## Features
 
 <div align="right">
@@ -45,6 +53,74 @@
 
 ---
 <br clear="all">
+
+## Setup
+
+### Prerequisites
+
+- **Python 3.10+**
+- **CUDA 12.1** (optional, for GPU-accelerated Whisper STT)
+- **Node.js 18+** (optional, only for Discord voice features)
+- **LM Studio** (optional, for local LLM inference)
+
+### 1. Clone & Setup
+
+```bash
+git clone https://github.com/Patini789/sera-ai.git
+cd sera-ai
+
+# Run the automatic setup script (Works on Windows, Linux, and Mac)
+python setup.py
+```
+
+The script will automatically:
+1. Create a virtual environment (`env`)
+2. Install all dependencies from `requirements.txt`
+3. Generate your initial configuration files (e.g., `.env`, `bot_config.py`, etc.) securely.
+
+> **Note on Voice / STT:** If you intend to use Whisper for Speech-to-Text (Voice features) with GPU acceleration, you will also need to install PyTorch with CUDA after the setup:
+> ```bash
+> # Windows:
+> env\Scripts\pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+> # Linux/Mac:
+> env/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+> ```
+
+### 2. Configure
+
+All configuration lives in `Python/env/`. The setup script has already created the files for you. Edit each file according to your setup. See the comments inside each template for guidance.
+- `.env` (API Keys)
+- `bot_config.py` (Bot personality & toggles)
+- `modelAPI.json` (Model endpoints)
+- `mcp_servers.json` (MCP tool servers)
+- `user_context.json` (User context)
+
+### 3. Run
+
+```bash
+# Activate the virtual environment
+# Windows:
+env\Scripts\activate
+# Linux/Mac:
+source env/bin/activate
+
+# Start the bot
+python -m Python
+```
+
+The Web UI will be available at `http://localhost:5000`.
+
+### 4. Discord Voice (Optional)
+
+If you enable the Discord bot with voice features:
+
+```bash
+cd voice_service
+npm install
+node index.js
+```
+
+---
 
 ## Architecture
 
@@ -136,74 +212,6 @@ sera-ai/
 ├── requirements.txt
 ├── package.json
 └── LICENSE
-```
-
----
-
-## Setup
-
-### Prerequisites
-
-- **Python 3.10+**
-- **CUDA 12.1** (optional, for GPU-accelerated Whisper STT)
-- **Node.js 18+** (optional, only for Discord voice features)
-- **LM Studio** (optional, for local LLM inference)
-
-### 1. Clone & Setup
-
-```bash
-git clone https://github.com/Patini789/sera-ai.git
-cd sera-ai
-
-# Run the automatic setup script (Works on Windows, Linux, and Mac)
-python setup.py
-```
-
-The script will automatically:
-1. Create a virtual environment (`env`)
-2. Install all dependencies from `requirements.txt`
-3. Generate your initial configuration files (e.g., `.env`, `bot_config.py`, etc.) securely.
-
-> **Note on Voice / STT:** If you intend to use Whisper for Speech-to-Text (Voice features) with GPU acceleration, you will also need to install PyTorch with CUDA after the setup:
-> ```bash
-> # Windows:
-> env\Scripts\pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-> # Linux/Mac:
-> env/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-> ```
-
-### 2. Configure
-
-All configuration lives in `Python/env/`. The setup script has already created the files for you. Edit each file according to your setup. See the comments inside each template for guidance.
-- `.env` (API Keys)
-- `bot_config.py` (Bot personality & toggles)
-- `modelAPI.json` (Model endpoints)
-- `mcp_servers.json` (MCP tool servers)
-- `user_context.json` (User context)
-
-### 3. Run
-
-```bash
-# Activate the virtual environment
-# Windows:
-env\Scripts\activate
-# Linux/Mac:
-source env/bin/activate
-
-# Start the bot
-python -m Python
-```
-
-The Web UI will be available at `http://localhost:5000`.
-
-### 4. Discord Voice (Optional)
-
-If you enable the Discord bot with voice features:
-
-```bash
-cd voice_service
-npm install
-node index.js
 ```
 
 ---

@@ -1,3 +1,4 @@
+
 <div align="center">
 <img src="assets/Logo.png" width="100" style="border-radius: 20px;" alt="Sera AI Logo">
 
@@ -149,55 +150,48 @@ sera-ai/
 - **Node.js 18+** (optional, only for Discord voice features)
 - **LM Studio** (optional, for local LLM inference)
 
-### 1. Clone & Install
+### 1. Clone & Setup
 
 ```bash
 git clone https://github.com/Patini789/sera-ai.git
 cd sera-ai
 
-# Create virtual environment
-python -m venv env
+# Run the automatic setup script (Works on Windows, Linux, and Mac)
+python setup.py
+```
 
-# Activate it
+The script will automatically:
+1. Create a virtual environment (`env`)
+2. Install all dependencies from `requirements.txt`
+3. Generate your initial configuration files (e.g., `.env`, `bot_config.py`, etc.) securely.
+
+> **Note on Voice / STT:** If you intend to use Whisper for Speech-to-Text (Voice features) with GPU acceleration, you will also need to install PyTorch with CUDA after the setup:
+> ```bash
+> # Windows:
+> env\Scripts\pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+> # Linux/Mac:
+> env/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+> ```
+
+### 2. Configure
+
+All configuration lives in `Python/env/`. The setup script has already created the files for you. Edit each file according to your setup. See the comments inside each template for guidance.
+- `.env` (API Keys)
+- `bot_config.py` (Bot personality & toggles)
+- `modelAPI.json` (Model endpoints)
+- `mcp_servers.json` (MCP tool servers)
+- `user_context.json` (User context)
+
+### 3. Run
+
+```bash
+# Activate the virtual environment
 # Windows:
 env\Scripts\activate
 # Linux/Mac:
 source env/bin/activate
 
-# Install PyTorch with CUDA (optional, for GPU)
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 2. Configure
-
-All configuration lives in `Python/env/`. Copy the template files and customize:
-
-```bash
-# Required: API keys
-cp Python/env/user..env.txt Python/env/.env
-
-# Required: Bot personality and feature toggles
-cp Python/env/user.bot_config.py Python/env/bot_config.py
-
-# Required: Model endpoints
-cp Python/env/user.modelAPI.json Python/env/modelAPI.json
-
-# Optional: MCP tool servers
-cp Python/env/user.mcp_servers.json Python/env/mcp_servers.json
-
-# Optional: User context
-cp Python/env/user.user_context.json Python/env/user_context.json
-```
-
-Edit each file according to your setup. See the comments inside each template for guidance.
-
-### 3. Run
-
-```bash
-# From the project root directory
+# Start the bot
 python -m Python
 ```
 
@@ -244,6 +238,19 @@ Sera is not just text; she exists in 3D space and interacts with game environmen
   <em>"Wait, I have to judge a game?!"</em>
 </div>
 
+> 🚧 **WIP / Disclaimer:** The Godot clients showcased below (Pet, 3D Avatar, and Desktop Companion) are currently in active development and will be released in the future. Right now, this repository includes the complete backend foundation: Sera already successfully streams real-time LipSync data and receives external game inputs via WebSocket, ready to connect to these upcoming frontends!
+
+### 🐾 Upcoming: Pet Sera
+
+https://github.com/user-attachments/assets/95d9cd50-aaae-4d4c-acdc-65e3ba015b11
+
+### 🛠️ Work in Progress: 3D Compatibility
+
+https://github.com/user-attachments/assets/6ed454ff-212f-4003-8df9-93a2cff07600
+
+### 💻 Future Release: Companion Desktop
+
+https://github.com/user-attachments/assets/545e8365-a327-471a-8726-e4f57de99afa
 ---
 
 ## 🤖 Discord Bot
@@ -255,6 +262,7 @@ Commands:
 - `$context [info]` — Set personal context for tailored responses
 - `$check [user|list]` — View saved contexts
 - `$help` — Show available commands
+
 
 ---
 

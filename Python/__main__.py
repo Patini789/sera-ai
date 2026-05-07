@@ -1,10 +1,11 @@
-# __main__.py
 import time
 import sys
 import os
-import torch
 
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+if sys.stdout.encoding.lower() != 'utf-8':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from Python.config.settings import settings

@@ -73,6 +73,6 @@ app.post('/leave', (req, res) => {
     res.send({ status: "left" });
 });
 
-// Discord Token
+// Discord Token #TODO: Move 2 env variables
 client.login(''); 
 app.listen(3000, () => console.log('🚀 Microservicio de Voz corriendo en puerto local 3000'));

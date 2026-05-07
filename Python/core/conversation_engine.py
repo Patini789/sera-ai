@@ -209,7 +209,23 @@ class ConversationEngine:
         response = None
 
         try:
-            if self.gemini_enable:
+            if self.opencode_enable:
+                try:
+                    clean_history_text = "\n\n".join(
+                        [
+                            f"{msg['role'].upper()}:\n{msg['content']}"
+                            for msg in self.conversation_history
+                        ]
+                    )
+                    response = self.api_client.opencode_complete(
+                        prompt=clean_history_text,
+                        system_instr=system_prompt_text,
+                    )
+                except Exception as e:
+                    print(f"OpenCode failed ({e})... Changing to next fallback.")
+                    response = None
+
+            if response is None and self.gemini_enable:
                 try:
                     clean_history_text = "\n\n".join(
                         [
@@ -277,19 +293,16 @@ class ConversationEngine:
                         for msg in self.conversation_history
                     ]
                 )
-                response = self.api_client.opencode_complete(
+                for token in self.api_client.opencode_complete_stream(
                     prompt=clean_history_text,
                     system_instr=system_prompt_text,
-
-                )
-                if response:
-                    full_response = response
+                ):
+                    full_response += token
                     used_api_model = True
-                    yield full_response  # Single chunk (OpenCode is not streamed)
+                    yield token
             except Exception as e:
                 used_api_model = False
                 print(f"OpenCode failed ({e})... Changing to LOCAL stream.")
-        # Fin test desechable
 
         # ── Try Gemini first if enabled ──────────────────────────
         elif self.gemini_enable:
@@ -300,14 +313,13 @@ class ConversationEngine:
                         for msg in self.conversation_history
                     ]
                 )
-                gemini_response = self.api_client.gemini_complete(
+                for token in self.api_client.gemini_complete_stream(
                     prompt=clean_history_text,
                     system_instr=system_prompt_text,
-                )
-                if gemini_response:
-                    full_response = gemini_response
+                ):
+                    full_response += token
                     used_api_model = True
-                    yield full_response  # Single chunk (Gemini is not streamed)
+                    yield token
             except Exception as e:
                 print(f"Gemini failed ({e})... Changing to LOCAL stream.")
 

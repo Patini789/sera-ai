@@ -1,7 +1,7 @@
 <div align="center">
 <img src="assets/Logo.png" width="100" style="border-radius: 20px;" alt="Sera AI Logo">
 
-# 🌟 Sera AI
+# Sera AI
 
 **A modular conversational AI system with long-term memory, multi-backend support, and real-time integrations.**
 
@@ -21,7 +21,7 @@
 
 ---
 
-## ✨ Features
+## Features
 
 <div align="right">
   <img src="assets/idea.png" width="150" align="right" alt="Sera Idea">
@@ -29,24 +29,24 @@
 
 | Feature | Description |
 |---------|-------------|
-| 🧠 **Multi-Backend AI** | Gemini, Gemma 4, OpenCode, and local LLM (LM Studio) with automatic fallback |
-| 🔄 **Auto Model Fallback** | Ordered priority list — if one model hits rate limits, the next one takes over |
-| 💾 **Long-Term Memory** | Vector embeddings with cosine similarity retrieval and automatic memory creation |
-| 🎯 **MCP Tool Integration** | Agentic loops with external MCP servers via JSON-RPC for function calling |
-| 🌐 **Web UI** | Real-time multi-user chat with SSE streaming, glassmorphism design, and live toggles |
-| 🤖 **Discord Bot** | Full Discord integration with streaming responses, voice channels, and STT |
-| 🗣️ **Dual TTS** | Edge TTS (local, free) + Kokoro API (external) with UDP lip-sync data |
-| 🎤 **Speech-to-Text** | Whisper (faster-whisper) with CUDA/CPU auto-detection |
-| 🎮 **Godot Bridge** | WebSocket bridge for a 3D avatar with real-time telemetry and lip-sync |
-| 🕹️ **Game Bridge** | WebSocket bridge for interactive games where the AI acts as a judge |
-| 📊 **Training Pipeline** | Automatic dataset collection (raw + clean JSONL) with a web-based curator tool |
-| ⏰ **Schedule Awareness** | Optional time-based context injection |
-| 🔧 **Fully Configurable** | Single `bot_config.py` controls all features, persona, and behavior |
+| **Multi-Backend AI** | Gemini, Gemma 4, OpenCode, and local LLM (LM Studio) with automatic fallback |
+| **Auto Model Fallback** | Ordered priority list — if one model hits rate limits, the next one takes over |
+| **Long-Term Memory** | Vector embeddings with cosine similarity retrieval and automatic memory creation |
+| **MCP Tool Integration** | Agentic loops with external MCP servers via JSON-RPC for function calling |
+| **Web UI** | Real-time multi-user chat with SSE streaming, glassmorphism design, and live toggles |
+| **Discord Bot** | Full Discord integration with streaming responses, voice channels, and STT |
+| **Dual TTS** | Edge TTS (local, free) + Kokoro API (external) with UDP lip-sync data |
+| **Speech-to-Text** | Whisper (faster-whisper) with CUDA/CPU auto-detection |
+| **Godot Bridge** | WebSocket bridge for a 3D avatar with real-time telemetry and lip-sync |
+| **Game Bridge** | WebSocket bridge for interactive games where the AI acts as a judge |
+| **Training Pipeline** | Automatic dataset collection (raw + clean JSONL) with a web-based curator tool |
+| **Schedule Awareness** | Optional time-based context injection |
+| **Fully Configurable** | Single `bot_config.py` controls all features, persona, and behavior |
 
 ---
 <br clear="all">
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 graph TB
@@ -100,7 +100,7 @@ graph TB
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 sera-ai/
@@ -140,7 +140,7 @@ sera-ai/
 
 ---
 
-## 🚀 Setup
+## Setup
 
 ### Prerequisites
 
@@ -208,7 +208,7 @@ node index.js
 
 ---
 
-## 🎨 Web UI
+## Web UI
 
 The Web UI features a mystical library theme with:
 
@@ -227,7 +227,7 @@ The Web UI features a mystical library theme with:
 
 ---
 
-## 🎮 3D Avatar & Game Integration
+## 3D Avatar & Game Integration
 
 Sera is not just text; she exists in 3D space and interacts with game environments in real-time via WebSocket bridges.
 
@@ -239,23 +239,23 @@ Sera is not just text; she exists in 3D space and interacts with game environmen
 
 #
 
-> 🚧 **WIP / Disclaimer:** The Godot clients showcased below (Pet, 3D Avatar, and Desktop Companion) are currently in active development and will be released in the future. Right now, this repository includes the complete backend foundation: Sera already successfully streams real-time LipSync data and receives external game inputs via WebSocket, ready to connect to these upcoming frontends!
+> **WIP / Disclaimer:** The Godot clients showcased below (Pet, 3D Avatar, and Desktop Companion) are currently in active development and will be released in the future. Right now, this repository includes the complete backend foundation: Sera already successfully streams real-time LipSync data and receives external game inputs via WebSocket, ready to connect to these upcoming frontends!
 
-### 🐾 Upcoming: Pet Sera
+### Upcoming: Pet Sera
 
 https://github.com/user-attachments/assets/95d9cd50-aaae-4d4c-acdc-65e3ba015b11
 
-### 🛠️ Work in Progress: 3D Compatibility
+### Work in Progress: 3D Compatibility
 
 https://github.com/user-attachments/assets/6ed454ff-212f-4003-8df9-93a2cff07600
 
-### 💻 Future Release: Companion Desktop
+### Future Release: Companion Desktop
 
 https://github.com/user-attachments/assets/545e8365-a327-471a-8726-e4f57de99afa
 
 ---
 
-## 🤖 Discord Bot
+## Discord Bot
 
 Commands:
 - `$chat [message]` — Talk to Sera with streaming responses
@@ -268,7 +268,7 @@ Commands:
 
 ---
 
-## 🔧 MCP Tool Integration
+## MCP Tool Integration
 
 Sera supports the [Model Context Protocol](https://modelcontextprotocol.io/) for agentic function calling. Tools are defined in external MCP servers and loaded at startup.
 
@@ -294,7 +294,7 @@ The system automatically:
 
 ---
 
-## 📊 Training Data Pipeline
+## Training Data Pipeline
 
 Every conversation automatically generates two JSONL datasets:
 
@@ -318,7 +318,7 @@ python datasets/curador.py
 
 ---
 
-## 🔌 Tech Stack
+## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
@@ -336,7 +336,7 @@ python datasets/curador.py
 
 ---
 
-## 📝 License
+## License
 
 This project is licensed under the [MIT License](LICENSE) — you are free to use, modify, and distribute this software with attribution.
 

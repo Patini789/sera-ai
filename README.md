@@ -23,7 +23,7 @@
 
 ## Features
 
-  <img src="assets/idea.png" width="150" align="right" alt="Sera Idea">
+<img src="assets/idea.png" width="150" align="right" alt="Sera Idea">
 
 
 | Feature | Description |

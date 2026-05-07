@@ -23,26 +23,22 @@
 
 ## Features
 
-## Features <img src="assets/idea.png" width="80" align="right" alt="Sera Idea">
+<img src="assets/idea.png" width="150" align="right" alt="Sera Idea">
 
+* **Multi-Backend AI**: Gemini, Gemma 4, OpenCode, and local LLM (LM Studio) with automatic fallback.
+* **Auto Model Fallback**: Ordered priority list — if one model hits rate limits, the next one takes over.
+* **Long-Term Memory**: Vector embeddings with cosine similarity retrieval and automatic memory creation.
+* **MCP Tool Integration**: Agentic loops with external MCP servers via JSON-RPC for function calling.
+* **Web UI**: Real-time multi-user chat with SSE streaming, glassmorphism design, and live toggles.
+* **Discord Bot**: Full Discord integration with streaming responses, voice channels, and STT.
+* **Dual TTS**: Edge TTS (local, free) + Kokoro API (external) with UDP lip-sync data.
+* **Speech-to-Text**: Whisper (faster-whisper) with CUDA/CPU auto-detection.
+* **Godot Bridge**: WebSocket bridge for a 3D avatar with real-time telemetry and lip-sync.
+* **Game Bridge**: WebSocket bridge for interactive games where the AI acts as a judge.
+* **Training Pipeline**: Automatic dataset collection (raw + clean JSONL) with a web-based curator tool.
+* **Schedule Awareness**: Optional time-based context injection.
+* **Fully Configurable**: Single `bot_config.py` controls all features, persona, and behavior.
 
-| Feature | Description |
-|---------|-------------|
-| **Multi-Backend AI** | Gemini, Gemma 4, OpenCode, and local LLM (LM Studio) with automatic fallback |
-| **Auto Model Fallback** | Ordered priority list — if one model hits rate limits, the next one takes over |
-| **Long-Term Memory** | Vector embeddings with cosine similarity retrieval and automatic memory creation |
-| **MCP Tool Integration** | Agentic loops with external MCP servers via JSON-RPC for function calling |
-| **Web UI** | Real-time multi-user chat with SSE streaming, glassmorphism design, and live toggles |
-| **Discord Bot** | Full Discord integration with streaming responses, voice channels, and STT |
-| **Dual TTS** | Edge TTS (local, free) + Kokoro API (external) with UDP lip-sync data |
-| **Speech-to-Text** | Whisper (faster-whisper) with CUDA/CPU auto-detection |
-| **Godot Bridge** | WebSocket bridge for a 3D avatar with real-time telemetry and lip-sync |
-| **Game Bridge** | WebSocket bridge for interactive games where the AI acts as a judge |
-| **Training Pipeline** | Automatic dataset collection (raw + clean JSONL) with a web-based curator tool |
-| **Schedule Awareness** | Optional time-based context injection |
-| **Fully Configurable** | Single `bot_config.py` controls all features, persona, and behavior |
-
----
 <br clear="all">
 
 ## Architecture

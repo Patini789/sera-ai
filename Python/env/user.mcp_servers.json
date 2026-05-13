@@ -1,0 +1,8 @@
+{
+  "sera-tools": {
+    "command": ".env/Scripts/python.exe",
+    "args": ["sera_tools.py"],
+    "cwd": "../MCPs",
+    "timeout": 300
+  }
+}

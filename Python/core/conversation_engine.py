@@ -16,6 +16,9 @@ from datetime import datetime
 from typing import Callable, Optional
 
 from .training_data import save_training_data
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ConversationEngine:
@@ -97,7 +100,7 @@ class ConversationEngine:
 
         # Track author for per-user context injection
         if author in self.user_context_json and author not in self.current_authors:
-            print(f"Adding context for {author}")
+            logger.info(f"Adding context for {author}")
             self.current_authors.append(author)
 
         combined_user_contexts = []
@@ -106,7 +109,10 @@ class ConversationEngine:
             if ctx:
                 combined_user_contexts.append(f"Context of {a}: {ctx}")
 
-        date_hour = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.now()
+        day_name = now.strftime("%A") 
+        date_hour = now.strftime("%Y-%m-%d %H:%M:%S")
+
 
         game_context = ""
         if self.current_game_state:
@@ -114,7 +120,7 @@ class ConversationEngine:
 
         system_prompt_text = (
             f"{self.instructions}\n"
-            f"Day and hour: {date_hour}.\n"
+            f"Day and hour: {date_hour}. Day of the week: {day_name}\n"
             f"{memory_text}\n"
             + "\n".join(combined_user_contexts)
             + game_context
@@ -124,9 +130,7 @@ class ConversationEngine:
             {"role": "system", "content": system_prompt_text}
         ] + self.conversation_history
 
-        print("🏷️ PROMPT Sent (Clean JSON):\n" + "-" * 50)
-        print(json.dumps(messages_for_api, indent=2, ensure_ascii=False))
-        print("-" * 50)
+        logger.debug("🏷️ PROMPT Sent (Clean JSON):\n" + json.dumps(messages_for_api, indent=2, ensure_ascii=False))
 
         return messages_for_api, system_prompt_text
 
@@ -163,12 +167,8 @@ class ConversationEngine:
             {"role": "assistant", "content": clean}
         )
 
-        print("🪧 Response (Internal with thoughts):\n" + "-" * 50)
-        print(full_response)
-        print("-" * 50)
-        print("🗣️ Response (Clean for users):\n" + "-" * 50)
-        print(clean)
-        print("-" * 50)
+        logger.info(f"Response (Clean for users): {clean}")
+        logger.debug(f"Response (Internal with thoughts): {full_response}")
 
         # 3. Fine-tuning data gets the raw response
         threading.Thread(
@@ -222,7 +222,7 @@ class ConversationEngine:
                         system_instr=system_prompt_text,
                     )
                 except Exception as e:
-                    print(f"OpenCode failed ({e})... Changing to next fallback.")
+                    logger.warning(f"OpenCode failed ({e})... Changing to next fallback.")
                     response = None
 
             if response is None and self.gemini_enable:
@@ -238,11 +238,11 @@ class ConversationEngine:
                         system_instr=system_prompt_text,
                     )
                 except Exception as e:
-                    print(f"Gemini failed ({e})... Changing to LOCAL.")
+                    logger.warning(f"Gemini failed ({e})... Changing to LOCAL.")
                     response = None
 
             if response is None:
-                print("Using local model...")
+                logger.info("Using local model...")
                 response = self.api_client.local_complete(
                     messages=messages_for_api,
                     max_tokens=self.max_tokens,
@@ -252,7 +252,7 @@ class ConversationEngine:
                 raise ValueError("La API no devolvió ninguna respuesta (vacía).")
         except Exception as e:
             error_msg = f"Internal system error: {e}"
-            print(f"❌ Error CRÍTICO en handle_new_message: {e}")
+            logger.error(f"Error CRÍTICO en handle_new_message: {e}")
             return error_msg
 
         self._finalize_response(
@@ -302,7 +302,7 @@ class ConversationEngine:
                     yield token
             except Exception as e:
                 used_api_model = False
-                print(f"OpenCode failed ({e})... Changing to LOCAL stream.")
+                logger.warning(f"OpenCode failed ({e})... Changing to LOCAL stream.")
 
         # ── Try Gemini first if enabled ──────────────────────────
         elif self.gemini_enable:
@@ -321,7 +321,7 @@ class ConversationEngine:
                     used_api_model = True
                     yield token
             except Exception as e:
-                print(f"Gemini failed ({e})... Changing to LOCAL stream.")
+                logger.warning(f"Gemini failed ({e})... Changing to LOCAL stream.")
 
         # ── Fallback to local streaming ──────────────────────────
         if not used_api_model:

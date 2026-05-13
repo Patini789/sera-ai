@@ -22,6 +22,9 @@ import queue
 import sys
 from pathlib import Path
 from typing import Any
+from ..core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def _load_mcp_servers() -> dict[str, dict]:
@@ -37,7 +40,7 @@ def _load_mcp_servers() -> dict[str, dict]:
         with open(config_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        print(f"⚠️ Failed to load MCP config ({config_path}): {e}")
+        logger.error(f"Failed to load MCP config ({config_path}): {e}")
         return {}
 
 
@@ -100,10 +103,10 @@ class MCPServerConnection:
                 cwd=cwd,
                 bufsize=0,
             )
-            print(f"🔌 MCP [{self.name}] subprocess started (PID: {self.process.pid}, cwd: {cwd})")
+            logger.debug(f"🔌 MCP [{self.name}] subprocess started (PID: {self.process.pid}, cwd: {cwd})")
             return True
         except Exception as e:
-            print(f"❌ MCP [{self.name}] failed to start: {e}")
+            logger.error(f"❌ MCP [{self.name}] failed to start: {e}")
             return False
 
     def stop(self):
@@ -114,7 +117,7 @@ class MCPServerConnection:
                 self.process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 self.process.kill()
-            print(f"🔌 MCP [{self.name}] subprocess stopped.")
+            logger.info(f"🔌 MCP [{self.name}] subprocess stopped.")
 
     # ── Low-level I/O with timeouts ────────────────────────────────
     #
@@ -128,7 +131,7 @@ class MCPServerConnection:
     ) -> dict | None:
         """Send a JSON-RPC request and read the matching response."""
         if not self.process or self.process.poll() is not None:
-            print(f"⚠️ MCP [{self.name}] process not running, restarting...")
+            logger.warning(f"⚠️ MCP [{self.name}] process not running, restarting...")
             if not self.start():
                 return None
 
@@ -153,7 +156,7 @@ class MCPServerConnection:
                 response = self._read_response_with_timeout(request_id, timeout)
                 return response
             except Exception as e:
-                print(f"❌ MCP [{self.name}] JSON-RPC error ({method}): {e}")
+                logger.error(f"❌ MCP [{self.name}] JSON-RPC error ({method}): {e}")
                 return None
 
     def _send_notification(self, method: str, params: dict | None = None) -> None:
@@ -180,7 +183,7 @@ class MCPServerConnection:
             try:
                 result_queue.put(self._read_until_response(request_id))
             except Exception as e:
-                print(f"❌ MCP [{self.name}] reader thread error: {e}")
+                logger.error(f"❌ MCP [{self.name}] reader thread error: {e}")
                 result_queue.put(None)
 
         t = threading.Thread(target=_reader, daemon=True)
@@ -189,7 +192,7 @@ class MCPServerConnection:
         try:
             return result_queue.get(timeout=timeout)
         except queue.Empty:
-            print(f"⏰ MCP [{self.name}] read timed out after {timeout}s")
+            logger.warning(f"⏰ MCP [{self.name}] read timed out after {timeout}s")
             return None
 
     def _read_until_response(self, request_id: int) -> dict | None:
@@ -236,10 +239,10 @@ class MCPServerConnection:
         if response and "result" in response:
             # Send initialized notification (no response expected)
             self._send_notification("notifications/initialized")
-            print(f"✅ MCP [{self.name}] initialized successfully.")
+            logger.info(f"✅ MCP [{self.name}] initialized successfully.")
             return True
 
-        print(f"❌ MCP [{self.name}] initialization failed (timeout or bad response)")
+        logger.error(f"❌ MCP [{self.name}] initialization failed (timeout or bad response)")
         return False
 
     def list_tools(self) -> list[dict]:
@@ -248,9 +251,9 @@ class MCPServerConnection:
         if response and "result" in response:
             self.tools = response["result"].get("tools", [])
             tool_names = [t.get("name", "?") for t in self.tools]
-            print(f"🛠️ MCP [{self.name}] tools: {tool_names}")
+            logger.debug(f"🛠️ MCP [{self.name}] tools: {tool_names}")
             return self.tools
-        print(f"⚠️ MCP [{self.name}] tools/list failed")
+        logger.warning(f"⚠️ MCP [{self.name}] tools/list failed")
         return []
 
     def call_tool(self, tool_name: str, arguments: dict) -> Any:
@@ -324,7 +327,7 @@ class MCPClient:
             # Rebuild declarations after all servers are settled
             self._gemini_declarations = self._build_gemini_declarations()
             count = len(self._gemini_declarations)
-            print(f"📋 Total MCP tools available for Gemini: {count}")
+            logger.debug(f"📋 Total MCP tools available for Gemini: {count}")
             self._ready_event.set()
 
         threading.Thread(target=_waiter, daemon=True).start()
@@ -340,11 +343,11 @@ class MCPClient:
                         self._tool_to_server[tool_name] = name
                     conn.ready = True
                 else:
-                    print(f"⚠️ MCP [{name}] init failed, tools unavailable.")
+                    logger.warning(f"⚠️ MCP [{name}] init failed, tools unavailable.")
             else:
-                print(f"⚠️ MCP [{name}] couldn't start.")
+                logger.warning(f"⚠️ MCP [{name}] couldn't start.")
         except Exception as e:
-            print(f"❌ MCP [{name}] connection error: {e}")
+            logger.error(f"❌ MCP [{name}] connection error: {e}")
 
     def wait_ready(self, timeout: float = 30) -> bool:
         """Block until all server connections are settled."""
@@ -359,7 +362,7 @@ class MCPClient:
         """Route a tool call to the correct MCP server."""
         # If tools aren't loaded yet, wait briefly
         if not self._ready_event.is_set():
-            print("⏳ Waiting for MCP servers to finish connecting...")
+            logger.info("⏳ Waiting for MCP servers to finish connecting...")
             self._ready_event.wait(timeout=20)
 
         server_name = self._tool_to_server.get(tool_name)
@@ -370,9 +373,9 @@ class MCPClient:
         if not conn:
             return f"Error: Server '{server_name}' not found"
 
-        print(f"🔧 Calling MCP tool: {tool_name} on [{server_name}]")
+        logger.info(f"🔧 Calling MCP tool: {tool_name} on [{server_name}]")
         result = conn.call_tool(tool_name, arguments)
-        print(f"🔧 MCP tool result ({tool_name}): {str(result)[:200]}...")
+        logger.debug(f"🔧 MCP tool result ({tool_name}): {str(result)[:200]}...")
         return str(result)
 
     def get_gemini_function_declarations(self) -> list[dict]:

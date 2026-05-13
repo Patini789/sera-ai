@@ -4,6 +4,9 @@ import psutil
 import win32gui
 import websockets
 from websockets.server import serve
+from ..core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 HOST = "127.0.0.1"
@@ -40,7 +43,7 @@ async def enviar_comando(comando_dict):
         try:
             await active_connection.send(json.dumps(comando_dict))
         except Exception as e:
-            print(f"Error sending command to Godot: {e}")
+            logger.error(f"Error sending command to Godot: {e}")
 
 async def send_telemetry_loop(websocket):
     """IA telemetry loop — sends system metrics to Godot."""
@@ -80,7 +83,7 @@ async def receive_from_godot_loop(websocket):
             elif evento == "vision_update":
                 global ultima_imagen_b64
                 ultima_imagen_b64 = data.get("image_base64")
-                print("Image received from Godot.")
+                logger.debug("Image received from Godot.")
                 
     except websockets.ConnectionClosed:
         pass
@@ -90,7 +93,7 @@ async def pedir_vision_a_godot():
     ultima_imagen_b64 = None
     
     await enviar_comando({"comando": "pedir_vision"})
-    print("Asking Godot for a vision update...")
+    logger.info("Asking Godot for a vision update...")
     
     tiempo_espera = 0
     while ultima_imagen_b64 is None and tiempo_espera < 5.0:
@@ -100,14 +103,14 @@ async def pedir_vision_a_godot():
     if ultima_imagen_b64:
         return ultima_imagen_b64
     else:
-        print("Godot failed to provide vision.")
+        logger.warning("Godot failed to provide vision.")
         return None
     
 async def godot_handler(websocket):
     """Main WebSocket handler."""
     global active_connection
     active_connection = websocket
-    print(f"Godot connected from {websocket.remote_address}!")
+    logger.info(f"Godot connected from {websocket.remote_address}!")
     
     tarea_enviar = asyncio.create_task(send_telemetry_loop(websocket))
     tarea_escuchar = asyncio.create_task(receive_from_godot_loop(websocket))
@@ -121,10 +124,10 @@ async def godot_handler(websocket):
         task.cancel()
         
     active_connection = None
-    print("Godot lost connection. Waiting for new connection...")
+    logger.info("Godot lost connection. Waiting for new connection...")
 
 async def godot_bridge_loop():
-    print(f"Bridge running on ws://{HOST}:{PORT}...")
+    logger.info(f"Bridge running on ws://{HOST}:{PORT}...")
     async with serve(godot_handler, HOST, PORT):
         await asyncio.get_running_loop().create_future()
 
@@ -132,4 +135,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(godot_bridge_loop())
     except KeyboardInterrupt:
-        print("Server stopped by user.")
+        logger.info("Server stopped by user.")

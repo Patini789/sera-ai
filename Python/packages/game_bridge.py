@@ -3,6 +3,9 @@ import json
 import websockets
 from websockets.server import serve
 import functools
+from ..core.logger import get_logger
+
+logger = get_logger(__name__)
 
 HOST = "127.0.0.1"
 PORT = 8081
@@ -38,7 +41,7 @@ async def game_handler(websocket, app_instance):
             
             if msg_type == "input":
                 user_prompt = data.get("prompt", "Analiza el estado...")
-                print(f"🎮 [Godot Input]: {user_prompt}")
+                logger.info(f"🎮 [Godot Input]: {user_prompt}")
                 
                 # Forward the prompt to the AI as a new conversation turn
                 loop = asyncio.get_running_loop()
@@ -54,10 +57,10 @@ async def game_handler(websocket, app_instance):
     finally:
         if active_godot_ws == websocket:
             active_godot_ws = None
-            print("🎮 [Game Bridge] Godot se ha desconectado.")
+            logger.info("🎮 [Game Bridge] Godot se ha desconectado.")
 
 async def game_bridge_loop(app_instance):
-    print(f"🎮 Game Bridge corriendo en ws://{HOST}:{PORT}...")
+    logger.info(f"🎮 Game Bridge corriendo en ws://{HOST}:{PORT}...")
     bound_handler = functools.partial(game_handler, app_instance=app_instance)
     async with serve(bound_handler, HOST, PORT):
         await asyncio.get_running_loop().create_future()

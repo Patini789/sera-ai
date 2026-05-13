@@ -7,7 +7,11 @@ import asyncio
 import numpy as np
 import pyaudio
 import requests
+import traceback
 from pydub import AudioSegment
+from ..core.logger import get_logger
+
+logger = get_logger(__name__)
 
 class TTS:
     def __init__(self, rate="+10%", pitch="-10Hz", voice="es-HN-KarlaNeural", just_discord=False): 
@@ -23,7 +27,9 @@ class TTS:
 
     async def speak(self, text, app_instance=None, voice_instance=None):
         """Convert text to speech via Edge TTS with local playback and UDP lip-sync."""
-        print(f"🗣️ EdgeTTS: {text}")
+        import re
+        text = re.sub(r'[^\w\s.,!?:;\'"¡¿()[\]{}\-+$%€/=&@]', '', text)
+        logger.info(f"🗣️ EdgeTTS: {text}")
         
         try:
             communicate = edge_tts.Communicate(
@@ -108,9 +114,8 @@ class TTS:
                 p.terminate()
 
         except Exception as e:
-            print(f"⚠️ Error in EdgeTTS Speak: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Error in EdgeTTS Speak: {e}")
+            logger.debug(f"EdgeTTS Traceback: {traceback.format_exc()}")
         finally:
             self.sock.sendto(b"0.0", (self.udp_ip, self.udp_port))
             if voice_instance:

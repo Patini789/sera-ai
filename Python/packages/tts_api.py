@@ -1,4 +1,3 @@
-
 import asyncio
 import os
 import socket
@@ -7,7 +6,11 @@ import time
 import numpy as np
 import pyaudio
 import requests
+import traceback
 from pydub import AudioSegment
+from ..core.logger import get_logger
+
+logger = get_logger(__name__)
 
 class TTS:
     def __init__(self, voice_api="8de335b3-4e1d-47d1-af39-9d9929b4841b", voice_model="es", voice_url="http://127.0.0.1:17493/generate", just_discord=False): 
@@ -25,7 +28,9 @@ class TTS:
 
     async def speak(self, text, app_instance=None, voice_instance=None):
         """Convert text to speech via local Kokoro API with playback and UDP lip-sync."""
-        print(f"🗣️ Kokoro API TTS: {text}")
+        import re
+        text = re.sub(r'[^\w\s.,!?:;\'"¡¿()[\]{}\-+$%€/=&@]', '', text)
+        logger.info(f"🗣️ Kokoro API TTS: {text}")
         
         try:
             payload = {
@@ -44,7 +49,7 @@ class TTS:
             if 'application/json' in content_type:
                 data = response.json()
                 job_id = data.get("id")
-                print(f"⏳ Generating audio. Ticket ID: {job_id}")
+                logger.debug(f"Generating audio. Ticket ID: {job_id}")
                 
                 audio_url = f"{self.base_url}/audio/{job_id}"
                 
@@ -54,11 +59,11 @@ class TTS:
                     
                     if audio_res.status_code == 200:
                         audio_bytes = audio_res.content
-                        print("✅ Audio generated successfully!")
+                        logger.debug("Audio generated successfully!")
                         break
 
                 if not audio_bytes:
-                    print("❌ Audio generation timed out.")
+                    logger.error("Audio generation timed out.")
                     return
             else:
                 audio_bytes = response.content
@@ -131,9 +136,8 @@ class TTS:
                 p.terminate()
 
         except Exception as e:
-            print(f"⚠️ Error in API TTS: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Error in API TTS: {e}")
+            logger.debug(f"API TTS Traceback: {traceback.format_exc()}")
         finally:
             self.sock.sendto(b"0.0", (self.udp_ip, self.udp_port))
             if voice_instance:

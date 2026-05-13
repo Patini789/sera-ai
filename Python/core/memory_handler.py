@@ -10,6 +10,9 @@ persisting.
 
 import json
 import re
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class MemoryHandler:
@@ -93,16 +96,16 @@ class MemoryHandler:
         )
 
         # Debug logging
-        print(f"🧠 Relevant memories with lifetime ({len(self.temporary_memories)}):")
+        logger.debug(f"🧠 Relevant memories with lifetime ({len(self.temporary_memories)}):")
         for m in self.temporary_memories:
-            print(
+            logger.debug(
                 f"  ({m['turns_left']} turns left) "
                 f"[{m['memory']['days_ago']} days_ago] "
                 f"{m['memory']['text']}"
             )
 
         if not combined_memories:
-            print("  No memories found.")
+            logger.debug("  No memories found.")
 
         memory_lines = [
             f"[{mem['days_ago']} days_ago] {mem['text']}"
@@ -132,20 +135,19 @@ class MemoryHandler:
                 summary_prompt, temperature=0.3, max_tokens=256
             )
 
-            print("🎙️ Raw summary response:")
-            print(raw_response)
+            logger.debug(f"🎙️ Raw summary response: {raw_response}")
 
             # Strip markdown code fences that the model sometimes adds.
             cleaned = re.sub(r"```json\s*|```", "", raw_response).strip()
 
             if not cleaned:
-                print("⚠️ AI returned empty summary.")
+                logger.warning("AI returned empty summary.")
                 return
 
             summary_data = json.loads(cleaned)
 
             if not summary_data.get("recuerdo", False):
-                print("Nothing worthy of memory according to AI.")
+                logger.info("Nothing worthy of memory according to AI.")
                 return
 
             summary_text = summary_data["text"]
@@ -157,17 +159,16 @@ class MemoryHandler:
             )
 
             if similar_memories:
-                print("⛔ Similar memory already exists. Skipping save.")
+                logger.info("⛔ Similar memory already exists. Skipping save.")
                 return
 
             self.memory.add_memory(summary_text, tags=tags)
             raw_log_list.clear()
-            print("💾 Memory saved successfully.")
+            logger.info("💾 Memory saved successfully.")
 
         except json.JSONDecodeError as e:
-            print(f"⚠️ Memory summary JSON decode error: {e}")
-            print("🔍 Received content:")
-            print(raw_response)  # noqa: F821 — set in the try block
+            logger.error(f"Memory summary JSON decode error: {e}")
+            logger.debug(f"Received content: {raw_response}")
 
         except Exception as e:
-            print(f"Unexpected error in memory summarization: {e}")
+            logger.error(f"Unexpected error in memory summarization: {e}")

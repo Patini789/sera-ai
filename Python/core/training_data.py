@@ -18,6 +18,9 @@ Saves each LLM interaction in two complementary JSONL files:
 import json
 import os
 import re
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def save_training_data(
@@ -112,4 +115,4 @@ def save_training_data(
         with open("datasets/dataset_clean.jsonl", "a", encoding="utf-8") as f:
             f.write(json.dumps(clean_data, ensure_ascii=False) + "\n")
     except Exception as e:
-        print(f"⚠️ Error saving training data: {e}")
+        logger.error(f"Error saving training data: {e}")

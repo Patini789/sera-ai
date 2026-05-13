@@ -8,6 +8,9 @@ import numpy as np
 import json
 
 from .mcp_client import MCPClient
+from ..core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class APIClient:
@@ -51,7 +54,50 @@ class APIClient:
         try:
             self.mcp_client.connect_all()
         except Exception as e:
-            print(f"⚠️ MCP initialization failed (tools won't be available): {e}")
+            logger.error(f"MCP initialization failed (tools won't be available): {e}")
+
+    @staticmethod
+    def _parse_inline_think_tags(text: str, currently_in_reasoning: bool):
+        """Parse text that may contain inline <think>/<\/think> tags.
+
+        Yields a sequence of:
+            - ``"__THINK_OPEN__"``  when a ``<think>`` tag is encountered
+            - ``"__THINK_CLOSE__"`` when a ``</think>`` tag is encountered
+            - plain-text strings and proper ``<think>``/``</think>`` wrapper
+              strings for downstream consumers
+
+        This allows streaming backends to handle models that embed
+        reasoning inside the regular ``content`` delta field instead of
+        using a dedicated ``reasoning_content`` field.
+        """
+        import re
+        # Fast path — no tags at all
+        if '<think>' not in text and '</think>' not in text:
+            if currently_in_reasoning:
+                # We're inside a reasoning block opened by reasoning_content,
+                # and now regular content arrived → close reasoning first.
+                yield "\n</think>\n\n"
+                yield "__THINK_CLOSE__"
+            yield text
+            return
+
+        # Split around <think> and </think> tags, keeping them as tokens
+        parts = re.split(r'(</?think>)', text)
+        for part in parts:
+            if not part:
+                continue
+            if part == '<think>':
+                if not currently_in_reasoning:
+                    yield "<think>\n"
+                    yield "__THINK_OPEN__"
+                    currently_in_reasoning = True
+            elif part == '</think>':
+                if currently_in_reasoning:
+                    yield "\n</think>\n\n"
+                    yield "__THINK_CLOSE__"
+                    currently_in_reasoning = False
+            else:
+                yield part
 
     def gemini_complete(self, prompt: str, system_instr: str) -> str:
         """Call the Gemini/Gemma API with automatic model fallback and MCP tool support.
@@ -76,7 +122,7 @@ class APIClient:
                 return result
             except requests.HTTPError as e:
                 if e.response is not None and e.response.status_code == 429:
-                    print(f"⚠️ Gemini [{model}] quota exhausted (429), trying next model...")
+                    logger.warning(f"⚠️ Gemini [{model}] quota exhausted (429), trying next model...")
                     last_error = e
                     continue
                 raise  # Non-quota errors propagate immediately
@@ -144,11 +190,11 @@ class APIClient:
         max_rounds = 10  # Safety limit to prevent infinite loops
 
         for round_num in range(max_rounds):
-            print(f"🌐 Gemini [{model}] round {round_num + 1}...")
+            logger.info(f"Gemini [{model}] round {round_num + 1}...")
             resp = self.session.post(url, headers=headers, json=payload, timeout=60)
 
             if resp.status_code != 200:
-                print(f"⚠️ Google Error: {resp.status_code} - {resp.text}")
+                logger.error(f"Google Error: {resp.status_code} - {resp.text}")
             resp.raise_for_status()
 
             data = resp.json()
@@ -173,7 +219,7 @@ class APIClient:
                     fn_args = fc.get("args", {})
                     fn_id = fc.get("id", "")
 
-                    print(f"🔧 Gemini requests tool: {fn_name}({fn_args})")
+                    logger.info(f"🔧 Gemini requests tool: {fn_name}({fn_args})")
 
                     # Execute via MCP
                     result = self.mcp_client.call_tool(fn_name, fn_args)
@@ -256,7 +302,7 @@ class APIClient:
                 return
             except requests.HTTPError as e:
                 if e.response is not None and e.response.status_code == 429:
-                    print(f"⚠️ Gemini [{model}] quota exhausted (429), trying next model...")
+                    logger.warning(f"⚠️ Gemini [{model}] quota exhausted (429), trying next model...")
                     last_error = e
                     continue
                 raise
@@ -313,7 +359,7 @@ class APIClient:
                 "functionDeclarations": gemini_tools
             }]
 
-        print(f"🚀 Sending to Gemini stream [{model}]")
+        logger.info(f"🚀 Sending to Gemini stream [{model}]")
         resp = self.session.post(url, headers=headers, json=payload, stream=True, timeout=60)
         resp.raise_for_status()
 
@@ -355,10 +401,14 @@ class APIClient:
                                 yield "<think>\n"
                             yield text
                         else:
-                            if in_reasoning:
-                                in_reasoning = False
-                                yield "\n</think>\n\n"
-                            yield text
+                            # Handle <think> tags embedded in content text
+                            for chunk in self._parse_inline_think_tags(text, in_reasoning):
+                                if chunk == "__THINK_OPEN__":
+                                    in_reasoning = True
+                                elif chunk == "__THINK_CLOSE__":
+                                    in_reasoning = False
+                                else:
+                                    yield chunk
                         # Accumulate text parts just in case we need to add to contents
                         # (Normally we only add to contents if there are function calls)
                         assistant_parts.append(p)
@@ -385,7 +435,7 @@ class APIClient:
                 fn_args = fc.get("args", {})
                 fn_id = fc.get("id", "")
 
-                print(f"🔧 Gemini stream requests tool: {fn_name}({fn_args})")
+                logger.info(f"🔧 Gemini stream requests tool: {fn_name}({fn_args})")
                 result = self.mcp_client.call_tool(fn_name, fn_args)
 
                 extracted_tools.append({
@@ -429,7 +479,7 @@ class APIClient:
             emb = resp.json()["data"][0]["embedding"]
             return np.array(emb, dtype=np.float32)
         except requests.RequestException as e:
-            print(f"Error during embedding request: {e}")
+            logger.error(f"Error during embedding request: {e}")
             return np.zeros(1)
 
     def local_complete(self, messages: list, **kwargs) -> str:
@@ -473,9 +523,9 @@ class APIClient:
                 resp.raise_for_status()
                 data = resp.json()
             except requests.RequestException as e:
-                print(f"Error during completion request: {e}")
+                logger.error(f"Error during completion request: {e}")
                 if e.response is not None:
-                    print(f"Server details: {e.response.text}")
+                    logger.debug(f"Server details: {e.response.text}")
                 return "Local server error"
 
             choice = data.get("choices", [{}])[0]
@@ -495,7 +545,7 @@ class APIClient:
                     except json.JSONDecodeError:
                         fn_args = {}
 
-                    print(f"🔧 Local requests tool: {fn_name}({fn_args})")
+                    logger.info(f"🔧 Local requests tool: {fn_name}({fn_args})")
                     result = self.mcp_client.call_tool(fn_name, fn_args)
 
                     extracted_tools.append({
@@ -565,7 +615,7 @@ class APIClient:
             headers["Authorization"] = f"Bearer {self.local_token}"
 
         try:
-            print(f"🚀 Sending to LM Studio (OpenAI format)")
+            logger.info(f"🚀 Sending to LM Studio (OpenAI format)")
             resp = self.session.post(openai_url, headers=headers, json=payload, stream=True, timeout=2400)
             resp.raise_for_status()
 
@@ -601,14 +651,18 @@ class APIClient:
                             yield "<think>\n"
                         yield reasoning
 
-                    # 2. Extract text content
+                    # 2. Extract text content (handle inline <think> tags)
                     content = delta.get("content")
                     if content:
-                        if in_reasoning:
-                            in_reasoning = False
-                            yield "\n</think>\n\n"
-                        assistant_content += content
-                        yield content
+                        for chunk in self._parse_inline_think_tags(content, in_reasoning):
+                            if chunk == "__THINK_OPEN__":
+                                in_reasoning = True
+                            elif chunk == "__THINK_CLOSE__":
+                                in_reasoning = False
+                            else:
+                                if not chunk.startswith("<think>") and not chunk.startswith("\n</think>"):
+                                    assistant_content += chunk
+                                yield chunk
 
                     # 3. Accumulate tool calls
                     tool_calls = delta.get("tool_calls")
@@ -656,7 +710,7 @@ class APIClient:
                     except:
                         fn_args = {}
                         
-                    print(f"🔧 Local stream requests tool: {fn_name}({fn_args})")
+                    logger.info(f"🔧 Local stream requests tool: {fn_name}({fn_args})")
                     result = self.mcp_client.call_tool(fn_name, fn_args)
                     
                     extracted_tools.append({
@@ -679,7 +733,7 @@ class APIClient:
                 yield from self.local_complete_stream(messages, **kwargs)
 
         except Exception as e:
-            print(f"❌ Error in local_complete_stream: {e}")
+            logger.error(f"Error in local_complete_stream: {e}")
             yield f"Local connection error: {e}"
 
     def opencode_complete(self, prompt: str, system_instr: str) -> str:
@@ -696,7 +750,7 @@ class APIClient:
             except requests.HTTPError as e:
                 # Catch 429 Too Many Requests
                 if e.response is not None and e.response.status_code == 429:
-                    print(f"⚠️ OpenCode [{model}] quota exhausted (429), trying next model...")
+                    logger.warning(f"⚠️ OpenCode [{model}] quota exhausted (429), trying next model...")
                     last_error = e
                     continue
                 raise  # Non-quota errors propagate immediately
@@ -741,7 +795,7 @@ class APIClient:
         max_rounds = 10
 
         for round_num in range(max_rounds):
-            print(f"🌐 OpenCode [{model}] round {round_num + 1}...")
+            logger.info(f"OpenCode [{model}] round {round_num + 1}...")
             
             payload = {
                 "model": model,
@@ -756,15 +810,12 @@ class APIClient:
             resp = self.session.post(url, headers=headers, json=payload, timeout=60)
 
             if resp.status_code != 200:
-                print(f"⚠️ OpenCode Error: {resp.status_code} - {resp.text}")
+                logger.error(f"OpenCode Error: {resp.status_code} - {resp.text}")
             resp.raise_for_status()
 
             data = resp.json()
 
-            print("\n" + "="*50)
-            print("🔍 DEBUG: RESPUESTA COMPLETA DE OPENCODE")
-            print(json.dumps(data, indent=2, ensure_ascii=False))
-            print("="*50 + "\n")
+            logger.debug(f"DEBUG: RESPUESTA COMPLETA DE OPENCODE: {json.dumps(data, indent=2, ensure_ascii=False)}")
 
             choice = data.get("choices", [{}])[0]
             message = choice.get("message", {})
@@ -845,7 +896,7 @@ class APIClient:
             except requests.HTTPError as e:
                 # Catch 429 Too Many Requests
                 if e.response is not None and e.response.status_code == 429:
-                    print(f"⚠️ OpenCode [{model}] quota exhausted (429), trying next model...")
+                    logger.warning(f"⚠️ OpenCode [{model}] quota exhausted (429), trying next model...")
                     last_error = e
                     continue
                 raise  # Non-quota errors propagate immediately
@@ -894,7 +945,7 @@ class APIClient:
         if openai_tools:
             payload["tools"] = openai_tools
 
-        print(f"🚀 Sending to OpenCode stream [{model}]")
+        logger.info(f"🚀 Sending to OpenCode stream [{model}]")
         resp = self.session.post(url, headers=headers, json=payload, stream=True, timeout=60)
         resp.raise_for_status()
 
@@ -930,14 +981,18 @@ class APIClient:
                         yield "<think>\n"
                     yield reasoning
 
-                # Text content
+                # Text content (handle inline <think> tags)
                 content = delta.get("content")
                 if content:
-                    if in_reasoning:
-                        in_reasoning = False
-                        yield "\n</think>\n\n"
-                    assistant_content += content
-                    yield content
+                    for chunk in self._parse_inline_think_tags(content, in_reasoning):
+                        if chunk == "__THINK_OPEN__":
+                            in_reasoning = True
+                        elif chunk == "__THINK_CLOSE__":
+                            in_reasoning = False
+                        else:
+                            if not chunk.startswith("<think>") and not chunk.startswith("\n</think>"):
+                                assistant_content += chunk
+                            yield chunk
 
                 # Tool calls
                 tool_calls = delta.get("tool_calls")
@@ -984,7 +1039,7 @@ class APIClient:
                 except:
                     fn_args = {}
                     
-                print(f"🔧 OpenCode stream requests tool: {fn_name}({fn_args})")
+                logger.info(f"🔧 OpenCode stream requests tool: {fn_name}({fn_args})")
                 result = self.mcp_client.call_tool(fn_name, fn_args)
                 
                 extracted_tools.append({

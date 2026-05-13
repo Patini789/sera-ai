@@ -13,6 +13,9 @@ import discord
 from discord.ext import commands
 from Python.config.settings import settings
 from typing import Callable, Any
+from Python.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class UDPWhisperServer:
@@ -97,7 +100,7 @@ class DiscordBot:
 
         @self.bot.event
         async def on_ready():
-            print(f'✅ Bot connected as {self.bot.user}')
+            logger.info(f'Bot connected as {self.bot.user}')
             for user_id in self.ids_to_notify:
                 try:
                     user = await self.bot.fetch_user(user_id)
@@ -168,7 +171,7 @@ class DiscordBot:
             abs_path = os.path.abspath(file_path)
             requests.post('http://127.0.0.1:3000/play', json={"filepath": abs_path})
         except Exception as e:
-            print(f"Error playing audio in Discord (Node.js not responding): {e}")
+            logger.error(f"Error playing audio in Discord (Node.js not responding): {e}")
 
     async def _stream_to_discord(self, message, app, author, content):
         EDIT_INTERVAL = 1.5

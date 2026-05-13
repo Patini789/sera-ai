@@ -4,6 +4,9 @@ import json
 import threading
 import logging
 from flask import Flask, request, jsonify, render_template, Response
+from ..core.logger import get_logger
+
+logger = get_logger(__name__)
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
@@ -56,6 +59,15 @@ def broadcast_active_users():
 @app_flask.route('/')
 def index():
     return render_template('chat.html')
+
+
+@app_flask.after_request
+def add_no_cache(response):
+    """Prevent browser from caching HTML/SSE so code changes take effect immediately."""
+    if 'text/html' in response.content_type or 'text/event-stream' in response.content_type:
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+    return response
 
 
 @app_flask.route('/api/state', methods=['GET'])
@@ -181,7 +193,7 @@ def handle_chat_broadcast():
             with chat_lock:
                 is_generating = False
             broadcast("end_gen")
-            print(f"Flask background generator error: {e}")
+            logger.error(f"Flask background generator error: {e}")
 
     threading.Thread(target=generator_thread, daemon=True).start()
     return jsonify({"status": "success"})
@@ -198,4 +210,4 @@ def start_ui_in_background(app_instance):
 
     thread = threading.Thread(target=run_server, daemon=True)
     thread.start()
-    print("🌐 Dashboard Web UI corriendo en: http://127.0.0.1:5000")
+    logger.info("🌐 Dashboard Web UI corriendo en: http://127.0.0.1:5000")

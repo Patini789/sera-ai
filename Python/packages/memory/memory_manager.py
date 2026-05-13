@@ -3,6 +3,9 @@ import os
 import numpy as np
 import pandas as pd
 from datetime import datetime, timezone
+from ...core.logger import get_logger
+
+logger = get_logger(__name__)
 
 class MemoryManager:
     def __init__(self, json_path, api_client, embedding_dim=None):
@@ -32,7 +35,7 @@ class MemoryManager:
             emb = mem["embedding"]
             dim = emb.shape[0]
             if dim != self.embedding_dim:
-                print(f"🧨 Invalid embedding in {mem['id']}: dim {dim}, adjusting to {self.embedding_dim}")
+                logger.warning(f"Invalid embedding in {mem['id']}: dim {dim}, adjusting to {self.embedding_dim}")
                 if dim > self.embedding_dim:
                     mem["embedding"] = emb[:self.embedding_dim]
                 else:
@@ -54,7 +57,7 @@ class MemoryManager:
                         "embedding": arr
                     })
             except Exception as e:
-                print(e)
+                logger.error(f"Error loading memories: {e}")
                 self.memories = []
         else:
             os.makedirs(os.path.dirname(self.json_path), exist_ok=True)
@@ -91,7 +94,7 @@ class MemoryManager:
         else:
             emb = np.array(embedding, dtype=np.float32)
         if emb.shape[0] != self.embedding_dim:
-            print(f"🧨 Adjusting new memory embedding from {emb.shape[0]} to {self.embedding_dim}")
+            logger.warning(f"Adjusting new memory embedding from {emb.shape[0]} to {self.embedding_dim}")
             if emb.shape[0] > self.embedding_dim:
                 emb = emb[:self.embedding_dim]
             else:
@@ -129,7 +132,7 @@ class MemoryManager:
         q_emb = np.array(query_embedding, dtype=np.float32)
 
         if q_emb.shape[0] != self.embedding_dim:
-            print(f"🧨 Adjusting query embedding from {q_emb.shape[0]} to {self.embedding_dim}")
+            logger.warning(f"Adjusting query embedding from {q_emb.shape[0]} to {self.embedding_dim}")
             if q_emb.shape[0] > self.embedding_dim:
                 q_emb = q_emb[:self.embedding_dim]
             else:
@@ -185,7 +188,7 @@ class MemoryManager:
                     })
             return enriched
         except Exception as e:
-            print(f"❌ Memory retrieval error: {e}")
+            logger.error(f"Memory retrieval error: {e}")
             return []
 
     def deduplicate_memories(self, memories: list[dict]) -> list[dict]:

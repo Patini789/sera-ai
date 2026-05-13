@@ -3,6 +3,9 @@ import threading
 import time
 import numpy as np
 from faster_whisper import WhisperModel
+from ..core.logger import get_logger
+
+logger = get_logger(__name__)
 
 class Voice:
     def __init__(self, on_speech_detected_fn, model_size="small", language="es"):
@@ -17,22 +20,22 @@ class Voice:
         self.buffer_lock = threading.Lock()
 
         try:
-            print("Loading Whisper (CUDA)...")
+            logger.info("Loading Whisper (CUDA)...")
             self.model = WhisperModel(model_size, device="cuda", compute_type="float16")
         except:
-            print("Loading Whisper (CPU)...")
+            logger.info("Loading Whisper (CPU)...")
             self.model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
         threading.Thread(target=self._aggregator_loop, daemon=True).start()
 
     def lock(self):
         """Lock buffer while Sera is speaking (TTS synchronization)."""
-        print("\n🔒 Buffer locked (Sera is speaking).")
+        logger.info("Buffer locked (Sera is speaking).")
         self.is_locked = True
 
     def unlock(self):
         """Unlock buffer when Sera finishes speaking."""
-        print("\n🔓 Buffer unlocked (Sera finished speaking).")
+        logger.info("Buffer unlocked (Sera finished speaking).")
         self.is_locked = False
 
     def process_discord_audio(self, user_name, audio_np):
@@ -40,7 +43,7 @@ class Voice:
         if len(audio_np) < 16000 * 0.5: 
             return
         
-        print(f"\nTranscribiendo a {user_name}...", end="\r")
+        logger.debug(f"Transcribing {user_name}...")
         
         segments, _ = self.model.transcribe(
             audio_np, 
@@ -53,7 +56,7 @@ class Voice:
         text = " ".join([s.text for s in segments]).strip()
         
         if text:
-            print(f"[{user_name}]: {text}")
+            logger.info(f"[{user_name}]: {text}")
             
             with self.buffer_lock:
                 self.conversation_buffer.append(f"{user_name}: {text}")

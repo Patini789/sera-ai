@@ -15,6 +15,9 @@ from .packages.godot_bridge import godot_bridge_loop
 from .packages.game_bridge import game_bridge_loop
 from .core import ConversationEngine, MemoryHandler
 from .io.voice import Voice
+from .core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 
@@ -68,6 +71,7 @@ class App:
         
         self.stt = None
         self.audio_player_hooks = []
+        self.notification_hooks = []
 
         if settings.speech_to_text:
             self.stt = Voice(on_speech_detected_fn=self.handle_new_message_wrapper)
@@ -75,6 +79,14 @@ class App:
             
     def register_audio_player(self, func_player):
         self.audio_player_hooks.append(func_player)
+
+    def register_notification_hook(self, func):
+        """Register a callback invoked when the scheduler produces a response.
+
+        The callback signature is ``func(message: str) -> None``.
+        Multiple hooks can be registered (e.g. Discord DM, Telegram, etc.).
+        """
+        self.notification_hooks.append(func)
 
     # ─── Properties (read/write access for ui.py) ─────────────────────
 
@@ -166,15 +178,14 @@ class App:
                         for hook in self.audio_player_hooks:
                             hook(audio_file_path)
                 except RuntimeError as e:
-                    print(f"⚠️ TTS thread error: {e}")
+                    logger.error(f"TTS thread error: {e}")
 
             threading.Thread(target=run_tts, daemon=True).start()
 
         # Memory creation
         if self.memory_handler.create_memories:
-            print("🪧 Conversation passed to memory summarizer:\n" + "-" * 50)
-            print(raw_conversation_log)
-            print("-" * 50)
+            logger.info("Conversation passed to memory summarizer")
+            logger.debug(f"Raw conversation log: {raw_conversation_log}")
 
             threading.Thread(
                 target=self.memory_handler.summarize_and_store,
@@ -227,12 +238,12 @@ class App:
 
         # 3. Blocking service or keep-alive
         if self.blocking_service:
-            print("Starting main blocking service...")
+            logger.info("Starting main blocking service...")
             self.blocking_service.start()
         else:
-            print("Running in non-discord mode. Press Ctrl+C to exit.")
+            logger.info("Running in non-discord mode. Press Ctrl+C to exit.")
             try:
                 while True:
                     time.sleep(1)
             except KeyboardInterrupt:
-                print("Exiting.")
+                logger.info("Exiting.")

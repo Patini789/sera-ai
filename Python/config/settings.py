@@ -15,6 +15,7 @@ class Settings:
         """Just a simple settings class to load and store configurations."""
         base = Path(__file__).resolve().parent.parent
         self.instructions = bot_settings["INSTRUCTIONS"]
+        self.log_level = bot_settings.get("LOG_LEVEL", "INFO")
 
         self.memory_path = base / "packages" / "memory" / "memories.json"
         self.file_path = base / ".." / "data" / "current_conversation.json"
@@ -50,7 +51,7 @@ class Settings:
         self.voice_active = bot_settings.get("VOICE_ACTIVE", False)
         self.voice_api_active = bot_settings.get("VOICE_API", False)
         self.enable_discord_bot = discord_config.get("ENABLE_DISCORD_BOT", False)
-        self.school = bot_settings.get("SCHOOL", False)
+
         self.speech_to_text = bot_settings.get("SPEECH_TO_TEXT", False)
         self.image_vision = bot_settings.get("IMAGE_VISION", False)
         self.extra_data = bot_settings.get("EXTRA_DATA", False) 
@@ -109,10 +110,19 @@ class Settings:
             self.user_context = {}
             self.user_context_path = None
 
-        # Schedules
-        if self.school:
-            self.schedules_path = base / "env" / "schedules.json"
-        else:
-            self.schedules_path = None
+        # Scheduler
+        self.scheduler_enabled = bot_settings.get("SCHEDULER_ENABLED", False)
+        self.scheduler_cron_hour = bot_settings.get("SCHEDULER_CRON_HOUR", 4)
+        self.scheduler_cron_minute = bot_settings.get("SCHEDULER_CRON_MINUTE", 0)
+        self.scheduler_prompt_template = bot_settings.get(
+            "SCHEDULER_PROMPT_TEMPLATE",
+            "[Sistema] Son las {hora}. Aquí están los eventos de hoy:\n{eventos}\nRecuérdaselos al usuario de forma natural."
+        )
+        self.scheduler_proximity_check_interval = bot_settings.get("SCHEDULER_PROXIMITY_CHECK_MINUTES", 10)
+        self.scheduler_proximity_window = bot_settings.get("SCHEDULER_PROXIMITY_WINDOW_MINUTES", 15)
+        self.scheduler_proximity_prompt = bot_settings.get(
+            "SCHEDULER_PROXIMITY_PROMPT",
+            "[Sistema] ¡Atención! En {minutos} minutos tienes: {evento}. Avísale al usuario."
+        )
 
 settings = Settings()

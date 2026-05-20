@@ -27,7 +27,9 @@
 * [Tech Stack](#tech-stack)
 * [Web UI](#web-ui)
 * [3D Avatar & Game Integration](#3d-avatar--game-integration)
+* [Scheduler Service](#scheduler-service)
 * [Training Data Pipeline](#training-data-pipeline)
+
 ---
 ## Features
 
@@ -37,7 +39,7 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Multi-Backend AI** | Gemini, Gemma 4, OpenCode, and local LLM (LM Studio) with automatic fallback |
+| **Multi-Backend AI** | Gemini, OpenRouter, OpenCode, and local LLMs (LM Studio) with automatic fallback |
 | **Auto Model Fallback** | Ordered priority list — if one model hits rate limits, the next one takes over |
 | **Long-Term Memory** | Vector embeddings with cosine similarity retrieval and automatic memory creation |
 | **MCP Tool Integration** | Agentic loops with external MCP servers via JSON-RPC for function calling |
@@ -47,8 +49,9 @@
 | **Speech-to-Text** | Whisper (faster-whisper) with CUDA/CPU auto-detection |
 | **Godot Bridge** | WebSocket bridge for a 3D avatar with real-time telemetry and lip-sync |
 | **Game Bridge** | WebSocket bridge for interactive games where the AI acts as a judge |
+| **Gaming Mode** | Vision-enabled auto-screenshots on user input, plus hotkey push-to-talk (PTT) for voice |
 | **Training Pipeline** | Automatic dataset collection (raw + clean JSONL) with a web-based curator tool |
-| **Schedule Awareness** | Optional time-based context injection |
+| **Scheduler Service** | Background service running daily digests and proximity alerts via MCP agenda integration |
 | **Fully Configurable** | Single `bot_config.py` controls all features, persona, and behavior |
 
 ---
@@ -190,7 +193,7 @@ sera-ai/
 │   │   ├── memory_handler.py       # Semantic memory retrieval & storage
 │   │   └── training_data.py        # Dataset persistence for fine-tuning
 │   ├── io/
-│   │   ├── APIClient.py     # Multi-backend LLM client (Gemini/Local/OpenCode)
+│   │   ├── APIClient.py     # Multi-backend LLM client (Gemini/Local/OpenCode/OpenRouter)
 │   │   ├── mcp_client.py    # MCP server lifecycle & JSON-RPC communication
 │   │   └── voice.py         # STT buffer aggregation
 │   ├── packages/
@@ -201,7 +204,8 @@ sera-ai/
 │   │   ├── tts.py           # Edge TTS implementation
 │   │   ├── tts_api.py       # Kokoro API TTS implementation
 │   │   ├── ui.py            # Flask Web UI with SSE
-│   │   └── schedules.py     # Schedule awareness
+│   │   ├── scheduler_service.py # Background scheduler service (digests & alerts)
+│   │   └── screenshot_utils.py # Screen capture utilities for Gaming Mode
 │   ├── templates/
 │   │   └── chat.html        # Web UI frontend
 │   └── env/                 # Configuration templates (see Setup)
@@ -261,6 +265,21 @@ https://github.com/user-attachments/assets/6ed454ff-212f-4003-8df9-93a2cff07600
 
 https://github.com/user-attachments/assets/545e8365-a327-471a-8726-e4f57de99afa
 
+### Gaming Mode (Vision & PTT)
+
+Gaming mode turns Sera into an interactive co-pilot that can see your screen and listen to your voice with minimal distraction:
+- **Vision Payload**: When enabled via `GAMING_MODE: True` (or toggled live from the Web UI), the system auto-captures and resizes a JPEG screenshot of your primary display on every user message. This screenshot is sent inline as a base64 vision payload to vision-capable APIs (like Gemini or OpenRouter models).
+- **Push-to-Talk (PTT)**: When `STT_GAMING_MODE: True` is enabled, the Speech-to-Text engine suspends voice activity detection and only listens when you hold down the PTT hotkey (default: `Ctrl+Alt+V`).
+- **🚧 Work in Progress: Screen Text Monitor (OCR)**: Gaming mode is being updated with a background screen text scanner. It will read text from your screen every second, compare text snapshots to prevent duplicate logs, and build an ongoing context history. This is ideal for playing Visual Novels or text-heavy games; the extracted text is not sent immediately as prompts, but rather queued silently and appended as context on the next user turn, allowing Sera to fully understand the game's progression even when you aren't talking to her every second.
+
+Configure these in `Python/env/bot_config.py`:
+```python
+"GAMING_MODE": False,               # Auto-screenshot vision payload
+"STT_GAMING_MODE": False,           # Push-to-talk hotkey for STT
+"SCREENSHOT_MAX_DIMENSION": 768,    # Max screenshot dimension (rescaled)
+"SCREENSHOT_JPEG_QUALITY": 70,      # Compression quality (1-100)
+```
+
 ---
 
 ## Discord Bot
@@ -272,7 +291,6 @@ Commands:
 - `$context [info]` — Set personal context for tailored responses
 - `$check [user|list]` — View saved contexts
 - `$help` — Show available commands
-
 
 ---
 
@@ -299,6 +317,27 @@ The system automatically:
 3. Discovers available tools
 4. Converts schemas to Gemini/OpenAI function declarations
 5. Executes tools in agentic loops during conversations
+
+---
+
+## Scheduler Service
+
+Sera includes a background scheduler service that keeps her aware of your agenda and upcoming events:
+
+1. **Daily Digest**: Fires once a day at a configured time (e.g., 4:00 AM) to retrieve today's schedule via MCP and prompt Sera to compose a morning greeting with news, weather, or humor.
+2. **Proximity Alerts**: Checks your schedule periodically and alerts you (and Sera) when an event is starting soon.
+
+Configure these in `Python/env/bot_config.py`:
+
+```python
+"SCHEDULER_ENABLED": True,
+"SCHEDULER_CRON_HOUR": 4,             # Hour (0-23) for the daily digest
+"SCHEDULER_CRON_MINUTE": 0,           # Minute (0-59) for the daily digest
+"SCHEDULER_PROXIMITY_CHECK_MINUTES": 10,   # How often to check for upcoming events
+"SCHEDULER_PROXIMITY_WINDOW_MINUTES": 15,  # Alert window in minutes
+"SCHEDULER_PROMPT_TEMPLATE": "[Sistema] Son las {hora}. Aquí están los eventos de hoy:\n{eventos}...",
+"SCHEDULER_PROXIMITY_PROMPT": "[Sistema] ¡Atención! En {minutos} minutos tienes: {evento}..."
+```
 
 ---
 
@@ -332,7 +371,7 @@ python datasets/curador.py
 |-----------|------------|
 | Core | Python 3.10, asyncio, threading |
 | Web UI | Flask, SSE, Bootstrap 5, vanilla JS |
-| AI Backends | Gemini API, OpenAI protocol, LM Studio |
+| AI Backends | Gemini API, OpenRouter, OpenCode, OpenAI protocol, LM Studio |
 | Embeddings | nomic-embed-text via LM Studio |
 | STT | faster-whisper (CTranslate2 + CUDA) |
 | TTS | Edge TTS, Kokoro API |

@@ -21,7 +21,9 @@ class APIClient:
                        local_token: str = None,
                        disable_thinking: bool = False,
                        opencode_key: str = None,
-                       opencode_models: list[str] = None) -> None:
+                       opencode_models: list[str] = None,
+                       openrouter_key: str = None,            # <--- NUEVO
+                       openrouter_models: list[str] = None) -> None:
         self.embed_url = embedding_url
         self.embed_model = embedding_model
         self.complete_url = completion_url
@@ -37,6 +39,9 @@ class APIClient:
         
         self.opencode_key = opencode_key
         self.opencode_models = opencode_models or ["big-pickle"]
+
+        self.openrouter_key = openrouter_key
+        self.openrouter_models = openrouter_models or ["nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"]
 
         from urllib.parse import urlparse
         parsed = urlparse(completion_url)
@@ -99,16 +104,73 @@ class APIClient:
             else:
                 yield part
 
-    def gemini_complete(self, prompt: str, system_instr: str) -> str:
+    @staticmethod
+    def _convert_openai_messages_to_gemini(messages: list) -> tuple[str, list]:
+        """Convert an OpenAI-format message list to Gemini native format.
+
+        Handles text-only messages as well as vision multipart content
+        (``type: "image_url"`` with inline base64 data URLs).
+
+        Returns:
+            ``(system_instruction_text, gemini_contents)`` tuple.
+        """
+        system_text = ""
+        gemini_contents = []
+
+        for msg in messages:
+            role = msg.get("role", "")
+            content = msg.get("content", "")
+
+            if role == "system":
+                system_text = content if isinstance(content, str) else ""
+                continue
+
+            gemini_role = "model" if role == "assistant" else "user"
+            parts = []
+
+            if isinstance(content, str):
+                parts.append({"text": content})
+            elif isinstance(content, list):
+                for part in content:
+                    ptype = part.get("type", "")
+                    if ptype == "text":
+                        parts.append({"text": part.get("text", "")})
+                    elif ptype == "image_url":
+                        url = part.get("image_url", {}).get("url", "")
+                        if url.startswith("data:image/jpeg;base64,"):
+                            b64_data = url.split("data:image/jpeg;base64,")[1]
+                            parts.append({
+                                "inlineData": {
+                                    "mimeType": "image/jpeg",
+                                    "data": b64_data,
+                                }
+                            })
+                        elif url.startswith("data:image/png;base64,"):
+                            b64_data = url.split("data:image/png;base64,")[1]
+                            parts.append({
+                                "inlineData": {
+                                    "mimeType": "image/png",
+                                    "data": b64_data,
+                                }
+                            })
+
+            if parts:
+                gemini_contents.append({"role": gemini_role, "parts": parts})
+
+        return system_text, gemini_contents
+
+    def gemini_complete(self, prompt: str, system_instr: str, messages: list | None = None) -> str:
         """Call the Gemini/Gemma API with automatic model fallback and MCP tool support.
 
         Implements an agentic loop: if the model requests a functionCall,
         the corresponding MCP tool is executed and the result is sent back
         until the model produces a final text response.
 
-        Tool calls are recorded and injected as ``<lmstudio_tools>`` tags
-        so that downstream processors (training_data, conversation_engine,
-        curador, etc.) can parse them with the same regex.
+        Args:
+            prompt: Fallback text prompt (used when ``messages`` is None).
+            system_instr: System instruction string.
+            messages: Optional pre-built OpenAI-format message list (e.g. with
+                vision content).  When provided the ``prompt`` argument is ignored.
         """
         if not self.gemini_key:
             raise ValueError("No Gemini Key")
@@ -117,7 +179,7 @@ class APIClient:
         last_error = None
         for model in self.gemini_models:
             try:
-                result = self._gemini_complete_with_model(model, prompt, system_instr)
+                result = self._gemini_complete_with_model(model, prompt, system_instr, _messages=messages)
                 self.gemini_model = model  # Remember the active model
                 return result
             except requests.HTTPError as e:
@@ -133,7 +195,7 @@ class APIClient:
         ) from last_error
 
     def _gemini_complete_with_model(
-        self, model: str, prompt: str, system_instr: str
+        self, model: str, prompt: str, system_instr: str, _messages=None
     ) -> str:
         """Execute a single Gemini API call with the specified model."""
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
@@ -144,18 +206,30 @@ class APIClient:
         }
 
         # ── Build initial contents ────────────────────────────────
-        # Gemma models don't support systemInstruction, so we prepend it
-        if "gemma" in model.lower():
-            final_prompt = f"{system_instr}\n\n{prompt}"
-            contents = [{
-                "role": "user",
-                "parts": [{"text": final_prompt}],
-            }]
+        if _messages is not None:
+            system_instr, contents = self._convert_openai_messages_to_gemini(_messages)
+            # Gemma models don't support systemInstruction, so prepend it to first user text
+            if "gemma" in model.lower() and system_instr:
+                for item in contents:
+                    if item["role"] == "user":
+                        for part in item["parts"]:
+                            if "text" in part:
+                                part["text"] = f"{system_instr}\n\n{part['text']}"
+                                break
+                        break
         else:
-            contents = [{
-                "role": "user",
-                "parts": [{"text": prompt}],
-            }]
+            # Gemma models don't support systemInstruction, so we prepend it
+            if "gemma" in model.lower():
+                final_prompt = f"{system_instr}\n\n{prompt}"
+                contents = [{
+                    "role": "user",
+                    "parts": [{"text": final_prompt}],
+                }]
+            else:
+                contents = [{
+                    "role": "user",
+                    "parts": [{"text": prompt}],
+                }]
 
         payload: dict = {
             "contents": contents,
@@ -166,7 +240,7 @@ class APIClient:
         }
 
         # Gemini-family models support systemInstruction natively
-        if "gemma" not in model.lower():
+        if "gemma" not in model.lower() and system_instr:
             payload["systemInstruction"] = {
                 "parts": [{"text": system_instr}]
             }
@@ -283,8 +357,15 @@ class APIClient:
         # If we exhausted the loop, return whatever text we got
         return "Error: Se alcanzó el límite de rondas de function calling."
 
-    def gemini_complete_stream(self, prompt: str, system_instr: str, **kwargs):
-        """Generator: yield each token from Gemini API with automatic model fallback and MCP tool support."""
+    def gemini_complete_stream(self, prompt: str, system_instr: str, messages: list | None = None, **kwargs):
+        """Generator: yield each token from Gemini API with automatic model fallback and MCP tool support.
+
+        Args:
+            prompt: Fallback text prompt (used when ``messages`` is None).
+            system_instr: System instruction string.
+            messages: Optional pre-built OpenAI-format message list (e.g. with
+                vision content).  When provided the ``prompt`` argument is ignored.
+        """
         if not self.gemini_key:
             raise ValueError("No Gemini Key")
 
@@ -292,7 +373,7 @@ class APIClient:
         last_error = None
         for model in self.gemini_models:
             try:
-                gen = self._gemini_complete_with_model_stream(model, prompt, system_instr, **kwargs)
+                gen = self._gemini_complete_with_model_stream(model, prompt, system_instr, _messages=messages, **kwargs)
                 try:
                     first_chunk = next(gen)
                     yield first_chunk
@@ -301,16 +382,31 @@ class APIClient:
                 yield from gen
                 return
             except requests.HTTPError as e:
-                if e.response is not None and e.response.status_code == 429:
+                status_code = e.response.status_code if e.response is not None else None
+
+                if status_code == 429:
                     logger.warning(f"⚠️ Gemini [{model}] quota exhausted (429), trying next model...")
                     last_error = e
                     continue
-                raise
+                elif status_code in [500, 502, 503, 504]:
+                    logger.warning(f"⚠️ Gemini [{model}] server error ({status_code}), trying next model...")
+                    last_error = e
+                    continue
+                else:
+                    logger.error(f"❌ Gemini [{model}] fatal error ({status_code}).")
+                    raise
+            except requests.exceptions.ReadTimeout as e:
+                logger.warning(f"⏱️ Gemini [{model}] connection timed out, trying next model...")
+                last_error = e
+                continue
 
-        raise ValueError(f"All Gemini models exhausted quota: {self.gemini_models}") from last_error
+        # All models exhausted
+        raise ValueError(
+            f"All Gemini models failed or exhausted quota: {self.gemini_models}"
+        ) from last_error
 
     def _gemini_complete_with_model_stream(
-        self, model: str, prompt: str, system_instr: str, _contents=None, **kwargs
+        self, model: str, prompt: str, system_instr: str, _contents=None, _messages=None, **kwargs
     ):
         """Generator: execute a single Gemini API stream call with the specified model."""
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse"
@@ -320,7 +416,19 @@ class APIClient:
             "x-goog-api-key": self.gemini_key,
         }
 
-        if _contents is None:
+        if _contents is not None:
+            contents = _contents
+        elif _messages is not None:
+            system_instr, contents = self._convert_openai_messages_to_gemini(_messages)
+            if "gemma" in model.lower() and system_instr:
+                for item in contents:
+                    if item["role"] == "user":
+                        for part in item["parts"]:
+                            if "text" in part:
+                                part["text"] = f"{system_instr}\n\n{part['text']}"
+                                break
+                        break
+        else:
             if "gemma" in model.lower():
                 final_prompt = f"{system_instr}\n\n{prompt}"
                 contents = [{
@@ -332,8 +440,6 @@ class APIClient:
                     "role": "user",
                     "parts": [{"text": prompt}],
                 }]
-        else:
-            contents = _contents
 
         payload: dict = {
             "contents": contents,
@@ -343,7 +449,7 @@ class APIClient:
             },
         }
 
-        if "gemma" not in model.lower():
+        if "gemma" not in model.lower() and system_instr:
             payload["systemInstruction"] = {
                 "parts": [{"text": system_instr}]
             }
@@ -736,8 +842,15 @@ class APIClient:
             logger.error(f"Error in local_complete_stream: {e}")
             yield f"Local connection error: {e}"
 
-    def opencode_complete(self, prompt: str, system_instr: str) -> str:
-        """Call the OpenCode (OpenAI protocol) API with automatic model fallback and MCP tool support."""
+    def opencode_complete(self, prompt: str, system_instr: str, messages: list | None = None) -> str:
+        """Call the OpenCode (OpenAI protocol) API with automatic model fallback and MCP tool support.
+
+        Args:
+            prompt: Fallback text prompt (used when ``messages`` is None).
+            system_instr: System instruction string.
+            messages: Optional pre-built OpenAI-format message list (e.g. with
+                vision content).  When provided the ``prompt`` argument is ignored.
+        """
         if not getattr(self, 'opencode_key', None):
             raise ValueError("No OpenCode Key")
 
@@ -745,11 +858,11 @@ class APIClient:
         last_error = None
         for model in self.opencode_models:
             try:
-                result = self._opencode_complete_with_model(model, prompt, system_instr)
+                result = self._opencode_complete_with_model(model, prompt, system_instr, _messages=messages)
                 return result
             except requests.HTTPError as e:
                 # Catch 429 Too Many Requests
-                if e.response is not None and e.response.status_code == 429:
+                if e.response is not None and e.response.status_code in [429, 402]:
                     logger.warning(f"⚠️ OpenCode [{model}] quota exhausted (429), trying next model...")
                     last_error = e
                     continue
@@ -757,17 +870,17 @@ class APIClient:
 
         raise ValueError(f"All OpenCode models exhausted quota: {self.opencode_models}") from last_error
 
-    def _opencode_complete_with_model(self, model: str, prompt: str, system_instr: str) -> str:
+    def _opencode_complete_with_model(self, model: str, prompt: str, system_instr: str, _messages=None) -> str:
         """Execute a single OpenCode API call with the specified model and Agentic Loop."""
-        url = "https://opencode.ai/zen/v1/chat/completions"
+        url = "https://opencode.ai/zen/go/v1/chat/completions"
 
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.opencode_key}"
         }
 
-        # Build standard OpenAI message format
-        messages = [
+        # Use pre-built messages (e.g. vision payload) or fall back to simple [system, user]
+        messages = _messages or [
             {"role": "system", "content": system_instr},
             {"role": "user", "content": prompt}
         ]
@@ -806,6 +919,14 @@ class APIClient:
             
             if openai_tools:
                 payload["tools"] = openai_tools
+
+            # Control thinking / reasoning effort
+            # reasoning_effort is OpenAI o-series only; most models on OpenCode
+            # (Qwen, DeepSeek, GLM) ignore it.  They use a "thinking" boolean
+            # instead.  When disable_thinking=True we send thinking=false.
+            # When disable_thinking=False we keep the model default (usually on).
+            if getattr(self, 'disable_thinking', False):
+                payload["thinking"] = False
 
             resp = self.session.post(url, headers=headers, json=payload, timeout=60)
 
@@ -875,8 +996,15 @@ class APIClient:
 
         return "Error: Function calling round limit reached (OpenCode)."
 
-    def opencode_complete_stream(self, prompt: str, system_instr: str, **kwargs):
-        """Generator: yield each token from OpenCode (OpenAI protocol) API with automatic model fallback and MCP tool support."""
+    def opencode_complete_stream(self, prompt: str, system_instr: str, messages: list | None = None, **kwargs):
+        """Generator: yield each token from OpenCode (OpenAI protocol) API with automatic model fallback and MCP tool support.
+
+        Args:
+            prompt: Fallback text prompt (used when ``messages`` is None).
+            system_instr: System instruction string.
+            messages: Optional pre-built OpenAI-format message list (e.g. with
+                vision content).  When provided the ``prompt`` argument is ignored.
+        """
         if not getattr(self, 'opencode_key', None):
             raise ValueError("No OpenCode Key")
 
@@ -884,7 +1012,7 @@ class APIClient:
         last_error = None
         for model in self.opencode_models:
             try:
-                gen = self._opencode_complete_with_model_stream(model, prompt, system_instr, **kwargs)
+                gen = self._opencode_complete_with_model_stream(model, prompt, system_instr, _messages=messages, **kwargs)
                 try:
                     first_chunk = next(gen)
                     yield first_chunk
@@ -895,7 +1023,7 @@ class APIClient:
                 return
             except requests.HTTPError as e:
                 # Catch 429 Too Many Requests
-                if e.response is not None and e.response.status_code == 429:
+                if e.response is not None and e.response.status_code in [429, 402, 400, 500, 502, 503, 504]:
                     logger.warning(f"⚠️ OpenCode [{model}] quota exhausted (429), trying next model...")
                     last_error = e
                     continue
@@ -905,7 +1033,7 @@ class APIClient:
 
     def _opencode_complete_with_model_stream(self, model: str, prompt: str, system_instr: str, _messages=None, **kwargs):
         """Generator: execute a single OpenCode API stream call with the specified model and Agentic Loop."""
-        url = "https://opencode.ai/zen/v1/chat/completions"
+        url = "https://opencode.ai/zen/go/v1/chat/completions"
 
         headers = {
             "Content-Type": "application/json",
@@ -944,6 +1072,13 @@ class APIClient:
         
         if openai_tools:
             payload["tools"] = openai_tools
+
+        # Control thinking / reasoning effort
+        # reasoning_effort is OpenAI o-series only; most models on OpenCode
+        # (Qwen, DeepSeek, GLM) ignore it.  They use a "thinking" boolean
+        # instead.  When disable_thinking=True we send thinking=false.
+        if getattr(self, 'disable_thinking', False):
+            payload["thinking"] = False
 
         logger.info(f"🚀 Sending to OpenCode stream [{model}]")
         resp = self.session.post(url, headers=headers, json=payload, stream=True, timeout=60)
@@ -1060,3 +1195,329 @@ class APIClient:
             
             # Recursive call
             yield from self._opencode_complete_with_model_stream(model, prompt, system_instr, _messages=messages, **kwargs)
+    
+    def openrouter_complete(self, prompt: str, system_instr: str, messages: list | None = None) -> str:
+        """Call the OpenRouter API with automatic model fallback and MCP tool support.
+
+        Args:
+            prompt: Fallback text prompt (used when ``messages`` is None).
+            system_instr: System instruction string.
+            messages: Optional pre-built OpenAI-format message list (e.g. with
+                vision content).  When provided the ``prompt`` argument is ignored.
+        """
+        if not getattr(self, 'openrouter_key', None):
+            raise ValueError("No OpenRouter Key")
+
+        last_error = None
+        for model in self.openrouter_models:
+            try:
+                result = self._openrouter_complete_with_model(model, prompt, system_instr, _messages=messages)
+                return result
+            except requests.HTTPError as e:
+                # Catch 429 Too Many Requests (Insufficient Quota / Rate Limit)
+                if e.response is not None and e.response.status_code in [429, 402]:
+                    logger.warning(f"⚠️ OpenRouter [{model}] quota/rate limit exhausted, trying next model...")
+                    last_error = e
+                    continue
+                raise
+
+        raise ValueError(f"All OpenRouter models exhausted quota: {self.openrouter_models}") from last_error
+
+    def _openrouter_complete_with_model(self, model: str, prompt: str, system_instr: str, _messages=None) -> str:
+        url = "https://openrouter.ai/api/v1/chat/completions"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.openrouter_key}",
+            "HTTP-Referer": "https://tu-sitio.com", # OpenRouter lo recomienda
+            "X-Title": "LMStudio APIClient"         # OpenRouter lo recomienda
+        }
+
+        messages = _messages or [
+            {"role": "system", "content": system_instr},
+            {"role": "user", "content": prompt}
+        ]
+        has_image = any(
+            isinstance(m.get("content"), list) and any(p.get("type") == "image_url" for p in m["content"])
+            for m in messages
+        )
+        logger.info(f"[OpenRouter] Sending to model={model}, vision={has_image}, msg_count={len(messages)}")
+
+        # Convert Gemini tool format to OpenAI/OpenRouter tool format
+        openai_tools = []
+        gemini_tools = getattr(self, 'mcp_client', None) and self.mcp_client.get_gemini_function_declarations()
+        if gemini_tools:
+            for g_tool in gemini_tools:
+                g = g_tool.copy()
+                if "parameters" not in g or not g["parameters"]:
+                    g["parameters"] = {"type": "object", "properties": {}}
+                elif "type" not in g["parameters"]:
+                    g["parameters"]["type"] = "object"
+                
+                openai_tools.append({"type": "function", "function": g})
+
+        extracted_tools: list[dict] = []
+        max_rounds = 10
+
+        for round_num in range(max_rounds):
+            logger.info(f"OpenRouter [{model}] round {round_num + 1}...")
+            
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": 0.6,
+                "max_tokens": 4000,
+                "include_reasoning": not getattr(self, 'disable_thinking', False) # Flag nativo de OpenRouter
+            }
+            
+            if openai_tools:
+                payload["tools"] = openai_tools
+
+            resp = self.session.post(url, headers=headers, json=payload, timeout=90)
+
+            if resp.status_code != 200:
+                logger.error(f"OpenRouter Error: {resp.status_code} - {resp.text}")
+            resp.raise_for_status()
+
+            data = resp.json()
+            choice = data.get("choices", [{}])[0]
+            message = choice.get("message", {})
+
+            # OpenRouter support for explicit reasoning field
+            reasoning = message.get("reasoning", "")
+
+            # Tool calling
+            tool_calls = message.get("tool_calls")
+            if tool_calls:
+                messages.append(message)
+
+                for tc in tool_calls:
+                    fn_name = tc.get("function", {}).get("name", "")
+                    fn_args_str = tc.get("function", {}).get("arguments", "{}")
+                    fn_id = tc.get("id", "")
+
+                    try:
+                        fn_args = json.loads(fn_args_str)
+                    except json.JSONDecodeError:
+                        fn_args = {}
+
+                    result = self.mcp_client.call_tool(fn_name, fn_args)
+
+                    extracted_tools.append({
+                        "type": "tool_call",
+                        "tool": fn_name,
+                        "arguments": fn_args,
+                        "result": str(result)[:500], 
+                    })
+
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": fn_id,
+                        "content": str(result)
+                    })
+                continue
+
+            # Final text extraction
+            final_text = message.get("content", "") or ""
+
+            # Inject reasoning as <think> block safely
+            if reasoning and not getattr(self, 'disable_thinking', False):
+                final_text = f"<think>\n{reasoning}\n</think>\n\n" + final_text
+
+            if extracted_tools:
+                hidden_tools_json = json.dumps(extracted_tools, ensure_ascii=False)
+                final_text += f"\n\n<lmstudio_tools>{hidden_tools_json}</lmstudio_tools>"
+
+            return final_text
+
+        return "Error: Function calling round limit reached (OpenRouter)."
+
+    def openrouter_complete_stream(self, prompt: str, system_instr: str, messages: list | None = None, **kwargs):
+        """Generator: yield each token from OpenRouter API with fallback and MCP tools.
+
+        Args:
+            prompt: Fallback text prompt (used when ``messages`` is None).
+            system_instr: System instruction string.
+            messages: Optional pre-built OpenAI-format message list (e.g. with
+                vision content).  When provided the ``prompt`` argument is ignored.
+        """
+        if not getattr(self, 'openrouter_key', None):
+            raise ValueError("No OpenRouter Key")
+
+        last_error = None
+        for model in self.openrouter_models:
+            try:
+                gen = self._openrouter_complete_with_model_stream(model, prompt, system_instr, _messages=messages, **kwargs)
+                try:
+                    first_chunk = next(gen)
+                    yield first_chunk
+                except StopIteration:
+                    return
+                yield from gen
+                return
+            except requests.HTTPError as e:
+                if e.response is not None and e.response.status_code in [429, 402]:
+                    logger.warning(f"⚠️ OpenRouter [{model}] quota/rate limit exhausted, trying next model...")
+                    last_error = e
+                    continue
+                raise
+
+        raise ValueError(f"All OpenRouter models exhausted quota: {self.openrouter_models}") from last_error
+
+    def _openrouter_complete_with_model_stream(self, model: str, prompt: str, system_instr: str, _messages=None, **kwargs):
+        url = "https://openrouter.ai/api/v1/chat/completions"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.openrouter_key}",
+            "HTTP-Referer": "https://tu-sitio.com",
+            "X-Title": "LMStudio APIClient"
+        }
+
+        messages = _messages or [
+            {"role": "system", "content": system_instr},
+            {"role": "user", "content": prompt}
+        ]
+        has_image = any(
+            isinstance(m.get("content"), list) and any(p.get("type") == "image_url" for p in m["content"])
+            for m in messages
+        )
+        logger.info(f"[OpenRouter Stream] Sending to model={model}, vision={has_image}, msg_count={len(messages)}")
+
+        openai_tools = []
+        gemini_tools = getattr(self, 'mcp_client', None) and self.mcp_client.get_gemini_function_declarations()
+        if gemini_tools:
+            for g_tool in gemini_tools:
+                g = g_tool.copy()
+                if "parameters" not in g or not g["parameters"]:
+                    g["parameters"] = {"type": "object", "properties": {}}
+                elif "type" not in g["parameters"]:
+                    g["parameters"]["type"] = "object"
+                
+                openai_tools.append({"type": "function", "function": g})
+
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": kwargs.get('temperature', 0.6),
+            "stream": True,
+            "include_reasoning": not getattr(self, 'disable_thinking', False)
+        }
+        
+        if openai_tools:
+            payload["tools"] = openai_tools
+
+        logger.info(f"🚀 Sending to OpenRouter stream [{model}]")
+        resp = self.session.post(url, headers=headers, json=payload, stream=True, timeout=90)
+        resp.raise_for_status()
+
+        in_reasoning = False
+        tool_calls_buffer = {}
+        assistant_content = ""
+
+        for line in resp.iter_lines():
+            if not line:
+                continue
+            
+            line_str = line.decode('utf-8')
+            if not line_str.startswith('data:'):
+                continue
+            
+            json_str = line_str[5:].strip()
+            if json_str == '[DONE]':
+                break
+
+            try:
+                item = json.loads(json_str)
+                choices = item.get("choices", [{}])
+                if not choices:
+                    continue
+                    
+                delta = choices[0].get("delta", {})
+
+                # OpenRouter reasoning field
+                reasoning = delta.get("reasoning", "")
+                if reasoning and not getattr(self, 'disable_thinking', False):
+                    if not in_reasoning:
+                        in_reasoning = True
+                        yield "<think>\n"
+                    yield reasoning
+
+                # Content field (with inline <think> tags parser fallback)
+                content = delta.get("content")
+                if content:
+                    for chunk in self._parse_inline_think_tags(content, in_reasoning):
+                        if chunk == "__THINK_OPEN__":
+                            in_reasoning = True
+                        elif chunk == "__THINK_CLOSE__":
+                            in_reasoning = False
+                        else:
+                            if not chunk.startswith("<think>") and not chunk.startswith("\n</think>"):
+                                assistant_content += chunk
+                            yield chunk
+
+                # Tool Calls
+                tool_calls = delta.get("tool_calls")
+                if tool_calls:
+                    for tc in tool_calls:
+                        idx = tc.get("index")
+                        if idx not in tool_calls_buffer:
+                            tool_calls_buffer[idx] = {
+                                "id": tc.get("id", ""),
+                                "type": "function",
+                                "function": {
+                                    "name": tc.get("function", {}).get("name", ""),
+                                    "arguments": ""
+                                }
+                            }
+                        args_chunk = tc.get("function", {}).get("arguments", "")
+                        if args_chunk:
+                            tool_calls_buffer[idx]["function"]["arguments"] += args_chunk
+
+            except json.JSONDecodeError:
+                pass
+
+        if in_reasoning:
+            yield "\n</think>\n\n"
+
+        # Execute Tools
+        if tool_calls_buffer:
+            formatted_tool_calls = list(tool_calls_buffer.values())
+            
+            messages.append({
+                "role": "assistant",
+                "content": assistant_content if assistant_content else "",
+                "tool_calls": formatted_tool_calls
+            })
+
+            extracted_tools = []
+            for tc in formatted_tool_calls:
+                fn_name = tc["function"]["name"]
+                fn_args_str = tc["function"]["arguments"]
+                fn_id = tc["id"]
+                try:
+                    fn_args = json.loads(fn_args_str)
+                except:
+                    fn_args = {}
+                    
+                logger.info(f"🔧 OpenRouter stream requests tool: {fn_name}({fn_args})")
+                result = self.mcp_client.call_tool(fn_name, fn_args)
+                
+                extracted_tools.append({
+                    "type": "tool_call",
+                    "tool": fn_name,
+                    "arguments": fn_args,
+                    "result": str(result)[:500],
+                })
+                
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": fn_id,
+                    "content": str(result)
+                })
+
+            hidden_tools_json = json.dumps(extracted_tools, ensure_ascii=False)
+            yield f"\n\n<lmstudio_tools>{hidden_tools_json}</lmstudio_tools>\n\n"
+            
+            # Recursive call
+            yield from self._openrouter_complete_with_model_stream(model, prompt, system_instr, _messages=messages, **kwargs)

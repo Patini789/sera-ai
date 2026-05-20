@@ -50,7 +50,6 @@ class App:
         self.memory_handler = MemoryHandler(
             memory_manager=memory_manager,
             use_memories=settings.use_memories,
-            create_memories=settings.create_memories,
         )
 
         # Conversation engine
@@ -60,23 +59,29 @@ class App:
             max_tokens=settings.max_tokens,
             gemini_enable=settings.gemini_enabled,
             opencode_enable=settings.opencode_enabled,
+            openrouter_enable=settings.openrouter_enabled,
             user_context_json=settings.user_context,
             instructions=settings.instructions,
             on_response_complete=self._on_response_complete,
+            screenshot_max_dimension=settings.screenshot_max_dimension,
+            screenshot_jpeg_quality=settings.screenshot_jpeg_quality,
         )
 
         # Service registry
         self.background_services = []
         self.blocking_service = None
-        
+
         self.stt = None
         self.audio_player_hooks = []
         self.notification_hooks = []
 
         if settings.speech_to_text:
-            self.stt = Voice(on_speech_detected_fn=self.handle_new_message_wrapper)
+            self.stt = Voice(on_speech_detected_fn=self.handle_new_message_wrapper, stt_gaming_mode=settings.stt_gaming_mode)
             self.background_services.append(self.stt)
-            
+
+        # Initialize Gaming Mode (screenshot-only) from config
+        self.engine.gaming_mode = settings.gaming_mode
+
     def register_audio_player(self, func_player):
         self.audio_player_hooks.append(func_player)
 
@@ -98,15 +103,6 @@ class App:
     @gemini_enable.setter
     def gemini_enable(self, value: bool):
         self.engine.gemini_enable = value
-
-    @property
-    def create_memories(self):
-        """Whether new memories are created after responses."""
-        return self.memory_handler.create_memories
-
-    @create_memories.setter
-    def create_memories(self, value: bool):
-        self.memory_handler.create_memories = value
 
     @property
     def use_memories(self):
@@ -134,6 +130,16 @@ class App:
     @disable_thinking.setter
     def disable_thinking(self, value: bool):
         self.api_client.disable_thinking = value
+
+    @property
+    def gaming_mode(self):
+        """Whether Gaming Mode is active (auto-screenshot on every input)."""
+        return self.engine.gaming_mode
+
+    @gaming_mode.setter
+    def gaming_mode(self, value: bool):
+        """Toggle Gaming Mode (screenshot capture only). STT push-to-talk is controlled separately via stt_gaming_mode."""
+        self.engine.gaming_mode = value
 
     # ─── Public conversation API ──────────────────────────────────────
 
@@ -166,8 +172,10 @@ class App:
 
         Handles cross-cutting concerns:
         * **TTS playback** — speaks the clean response asynchronously.
-        * **Memory creation** — summarises the conversation log and
-          persists it if deemed relevant.
+
+        Memory creation is now handled agentically: Sera calls the
+        ``guardar_recuerdo`` MCP tool directly when she decides to
+        remember something.
         """
         # TTS playback
         if self.voice_active and self.tts:
@@ -181,17 +189,6 @@ class App:
                     logger.error(f"TTS thread error: {e}")
 
             threading.Thread(target=run_tts, daemon=True).start()
-
-        # Memory creation
-        if self.memory_handler.create_memories:
-            logger.info("Conversation passed to memory summarizer")
-            logger.debug(f"Raw conversation log: {raw_conversation_log}")
-
-            threading.Thread(
-                target=self.memory_handler.summarize_and_store,
-                args=(raw_conversation_log, self.api_client),
-                daemon=True,
-            ).start()
 
     # ─── Service management ───────────────────────────────────────────
 

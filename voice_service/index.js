@@ -32,28 +32,43 @@ app.post('/join', (req, res) => {
     // speaking
     currentConnection.receiver.speaking.on('start', (userId) => {
         const user = client.users.cache.get(userId);
-        if (user?.bot) return; // Ignorar a otros bots
-        if (user?.bot || activeStreams.has(userId)) return;
+        if (!user || user.bot || activeStreams.has(userId)) return;
+        
         activeStreams.add(userId);
 
-
+        // CAMBIO CRÍTICO: Se aumenta de 200 a 1500ms para evitar micro-cortes
+        // al tomar aire, permitiendo enviar la frase entera a Python.
         const audioStream = currentConnection.receiver.subscribe(userId, {
-            end: { behavior: EndBehaviorType.AfterSilence, duration: 200 },
+            end: { behavior: EndBehaviorType.AfterSilence, duration: 1500 },
         });
 
         const decoder = new prism.opus.Decoder({ rate: 16000, channels: 1, frameSize: 960 });
-        
-        audioStream.pipe(decoder).on('data', (chunk) => {
-            const nameBuf = Buffer.from(user.username);
-            const header = Buffer.alloc(1);
-            header.writeUInt8(nameBuf.length);
-            
-            const finalPacket = Buffer.concat([header, nameBuf, chunk]);
-            udpClient.send(finalPacket, PYTHON_UDP_PORT, '127.0.0.1');
+
+        // CRITICAL: Handle the error event to stop the crash
+        decoder.on('error', (err) => {
+            console.error(`Decoder error for user ${userId}:`, err.message);
+            // Clean up on error
+            audioStream.destroy();
+            activeStreams.delete(userId);
         });
+
+        audioStream.pipe(decoder).on('data', (chunk) => {
+            try {
+                const nameBuf = Buffer.from(user.username);
+                const header = Buffer.alloc(1);
+                header.writeUInt8(nameBuf.length);
+                
+                const finalPacket = Buffer.concat([header, nameBuf, chunk]);
+                udpClient.send(finalPacket, PYTHON_UDP_PORT, '127.0.0.1');
+            } catch (e) {
+                console.error("Error sending UDP packet:", e);
+            }
+        });
+
         audioStream.on('end', () => {
-        activeStreams.delete(userId);
-    });
+            activeStreams.delete(userId);
+            decoder.destroy(); // Always destroy the decoder when done
+        });
     });
 
     res.send({ status: "ok" });

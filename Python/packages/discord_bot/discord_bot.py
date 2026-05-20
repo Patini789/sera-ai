@@ -105,7 +105,8 @@ class DiscordBot:
                 try:
                     user = await self.bot.fetch_user(user_id)
                     if user:
-                        await user.send("Bot Active.")
+                        #await user.send("Bot Active.")
+                        pass
                 except Exception:
                     pass
 

@@ -18,6 +18,12 @@ You are Sera, a helpful AI assistant.
     "USE_MEMORIES": True,       # Retrieve and inject relevant memories into prompts
     "DISABLE_THINKING": False,  # Skip model's reasoning/thinking phase (useful for TTS)
     "JUST_DISCORD_TTS": False,  # Route TTS only to Discord (no local playback)
+
+    # ── Gaming Mode (Vision & PTT) ───────────────────────────
+    "GAMING_MODE": False,               # Auto-capture screenshot on every input as vision payload
+    "STT_GAMING_MODE": False,           # Push-to-talk (Ctrl+Alt+V) for STT instead of silence detection
+    "SCREENSHOT_MAX_DIMENSION": 768,    # Max dimension (width/height) for screenshot resizing
+    "SCREENSHOT_JPEG_QUALITY": 70,      # JPEG quality (1-100) for compression
     # ── Scheduler / Agenda ────────────────────────────────
     # Enable the background scheduler that fires daily digests and proximity alerts.
     "SCHEDULER_ENABLED": False,
@@ -54,6 +60,11 @@ You are Sera, a helpful AI assistant.
     # If True, tries OpenCode API after Gemini (if enabled) and before local LLM.
     "OPENCODE_ENABLED": False,
     "OPENCODE_MODELS": ["big-pickle"],
+
+    # ── Cloud API: OpenRouter ────────────────────────────────
+    # If True, tries OpenRouter API before falling back to the local LLM.
+    "OPENROUTER_ENABLED": False,
+    "OPENROUTER_MODELS": ["google/gemini-3.1-flash-lite"],
 
     # ── Voice Settings (Edge TTS) ────────────────────────────
     # See available voices: https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list

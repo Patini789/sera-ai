@@ -75,10 +75,10 @@ def get_state():
     return jsonify({
         "gemini_enable": bot_app.gemini_enable,
         "voice_active": bot_app.voice_active,
-        "create_memories": bot_app.create_memories,
         "use_memories": bot_app.use_memories,
         "disable_thinking": bot_app.disable_thinking,
-        "instructions": bot_app.instructions
+        "instructions": bot_app.instructions,
+        "gaming_mode": bot_app.gaming_mode,
     })
 
 
@@ -87,10 +87,10 @@ def update_state():
     data = request.json
     if "gemini_enable" in data: bot_app.gemini_enable = data["gemini_enable"]
     if "voice_active" in data: bot_app.voice_active = data["voice_active"]
-    if "create_memories" in data: bot_app.create_memories = data["create_memories"]
     if "use_memories" in data: bot_app.use_memories = data["use_memories"]
     if "disable_thinking" in data: bot_app.disable_thinking = data["disable_thinking"]
     if "instructions" in data: bot_app.instructions = data["instructions"]
+    if "gaming_mode" in data: bot_app.gaming_mode = data["gaming_mode"]
     return jsonify({"status": "success"})
 
 @app_flask.route('/api/presence', methods=['POST'])
@@ -167,8 +167,10 @@ def handle_chat_broadcast():
         is_generating = True
         
         user_msg_entry = {"type": "user", "author": author, "text": message}
+        if bot_app.gaming_mode:
+            user_msg_entry["screenshot"] = True
         ui_history.append(user_msg_entry)
-        
+
     broadcast("user_msg", user_msg_entry)
     broadcast("start_gen")
 

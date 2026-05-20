@@ -1,35 +1,33 @@
-"""Memory retrieval, deduplication, and long-term storage.
+"""Memory retrieval and long-term storage handler.
 
 This module encapsulates all memory-related logic that was previously
 mixed into ``app.py``.  It manages a **temporary memory cache** with
 per-turn lifetimes so that relevant memories stay in the system prompt
-for several turns before fading, and it handles the summarise-and-store
-pipeline that decides whether a conversation fragment is worth
-persisting.
+for several turns before fading.
+
+Memory *creation* is now handled agentically via MCP Tools: Sera decides
+when to save a memory by calling ``guardar_recuerdo`` directly.  The
+``summarize_and_store`` batch pipeline has been removed.
 """
 
-import json
-import re
 from .logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class MemoryHandler:
-    """Manages short-term memory retrieval and long-term memory storage.
+    """Manages short-term memory retrieval and injection into prompts.
 
     Args:
         memory_manager: A :class:`MemoryManager` instance used for
             vector-based retrieval and persistence.
-        use_memories: Whether to retrieve memories on each turn.
-        create_memories: Whether to attempt storing new memories after
-            a response is generated.
+        use_memories: Whether to retrieve memories on each turn and
+            inject them into the system prompt.
     """
 
-    def __init__(self, memory_manager, use_memories: bool = True, create_memories: bool = False):
+    def __init__(self, memory_manager, use_memories: bool = True):
         self.memory = memory_manager
         self.use_memories = use_memories
-        self.create_memories = create_memories
 
         # Temporary cache: each entry is {"memory": <dict>, "turns_left": int}
         self.temporary_memories: list[dict] = []
@@ -52,7 +50,7 @@ class MemoryHandler:
 
         Args:
             message: The current user message to search against.
-            author: The message author, used as a memory tag filter.
+            author: The message author, used as a soft-tag boost filter.
 
         Returns:
             A newline-separated string of formatted memories, or an
@@ -96,7 +94,7 @@ class MemoryHandler:
         )
 
         # Debug logging
-        logger.debug(f"🧠 Relevant memories with lifetime ({len(self.temporary_memories)}):")
+        logger.debug(f"Relevant memories with lifetime ({len(self.temporary_memories)}):")
         for m in self.temporary_memories:
             logger.debug(
                 f"  ({m['turns_left']} turns left) "
@@ -112,63 +110,3 @@ class MemoryHandler:
             for mem in combined_memories
         ]
         return "\n".join(memory_lines) if memory_lines else ""
-
-    def summarize_and_store(self, raw_log_list: list, api_client) -> None:
-        """Summarize the conversation and store a memory if relevant.
-
-        Runs the raw conversation log through the LLM to determine
-        whether the exchange contains information worth remembering.
-        On success the ``raw_log_list`` is **cleared** so that
-        subsequent calls do not re-process the same conversation.
-
-        Args:
-            raw_log_list: *Mutable* reference to the engine's raw
-                conversation log (a ``list[str]``).  Cleared on
-                successful save.
-            api_client: API client used for the summarisation call.
-        """
-        try:
-            text = "\n".join(raw_log_list)
-            # TODO: replace with a proper summarisation prompt.
-            summary_prompt = "Made a resumen"
-            raw_response = api_client.complete(
-                summary_prompt, temperature=0.3, max_tokens=256
-            )
-
-            logger.debug(f"🎙️ Raw summary response: {raw_response}")
-
-            # Strip markdown code fences that the model sometimes adds.
-            cleaned = re.sub(r"```json\s*|```", "", raw_response).strip()
-
-            if not cleaned:
-                logger.warning("AI returned empty summary.")
-                return
-
-            summary_data = json.loads(cleaned)
-
-            if not summary_data.get("recuerdo", False):
-                logger.info("Nothing worthy of memory according to AI.")
-                return
-
-            summary_text = summary_data["text"]
-            tags = summary_data.get("tags", [])
-
-            # Check for near-duplicate memories before saving
-            similar_memories = self.memory.retrieve(
-                summary_text, top_k=3, min_similarity=0.87, tags=tags
-            )
-
-            if similar_memories:
-                logger.info("⛔ Similar memory already exists. Skipping save.")
-                return
-
-            self.memory.add_memory(summary_text, tags=tags)
-            raw_log_list.clear()
-            logger.info("💾 Memory saved successfully.")
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Memory summary JSON decode error: {e}")
-            logger.debug(f"Received content: {raw_response}")
-
-        except Exception as e:
-            logger.error(f"Unexpected error in memory summarization: {e}")

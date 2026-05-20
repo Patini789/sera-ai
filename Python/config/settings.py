@@ -44,7 +44,7 @@ class Settings:
             self.embedding_url = embed_data.get("url")
             self.local_token = os.getenv("LOCAL_TOKEN")
 
-            
+            self.openrouter_key = os.getenv("OPENROUTER_KEY")
             self.opencode_key = os.getenv("OPENCODE_KEY")
 
         # Boolean Toggles
@@ -53,13 +53,22 @@ class Settings:
         self.enable_discord_bot = discord_config.get("ENABLE_DISCORD_BOT", False)
 
         self.speech_to_text = bot_settings.get("SPEECH_TO_TEXT", False)
+        if self.speech_to_text:
+            self.stt_gaming_mode = bot_settings.get("STT_GAMING_MODE", False)
         self.image_vision = bot_settings.get("IMAGE_VISION", False)
-        self.extra_data = bot_settings.get("EXTRA_DATA", False) 
-        self.create_memories = bot_settings.get("CREATE_MEMORIES", False)
+        self.extra_data = bot_settings.get("EXTRA_DATA", False)
         self.use_memories = bot_settings.get("USE_MEMORIES", True)
 
+        # Gaming Mode
+        self.gaming_mode = bot_settings.get("GAMING_MODE", False)
+        self.screenshot_max_dimension = bot_settings.get("SCREENSHOT_MAX_DIMENSION", 768)
+        self.screenshot_jpeg_quality = bot_settings.get("SCREENSHOT_JPEG_QUALITY", 70)
+
         self.opencode_enabled = bot_settings.get("OPENCODE_ENABLED", True)
-        self.opencode_models = bot_settings.get("OPENCODE_MODELS", ["big-pickle"])        
+        self.opencode_models = bot_settings.get("OPENCODE_MODELS", ["big-pickle"])
+
+        self.openrouter_enabled = bot_settings.get("OPENROUTER_ENABLED", True)
+        self.openrouter_models = bot_settings.get("OPENROUTER_MODELS", ["gpt-4o", "gpt-3.5-turbo"])        
 
         self.gemini_enabled = bot_settings.get("GEMINI_ENABLE", False)
         self.gemini_models = bot_settings.get("GEMINI_MODELS", ["gemma-4-26b"])

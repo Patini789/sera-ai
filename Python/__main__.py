@@ -1,6 +1,7 @@
 import time
 import sys
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 if sys.stdout.encoding.lower() != 'utf-8':
     import io
@@ -34,7 +35,9 @@ def main():
         local_token=settings.local_token,
         disable_thinking=settings.disable_thinking,
         opencode_key=settings.opencode_key,
-        opencode_models=settings.opencode_models
+        opencode_models=settings.opencode_models,
+        openrouter_key=settings.openrouter_key,
+        openrouter_models=settings.openrouter_models,
     )
 
     memory_manager = MemoryManager(

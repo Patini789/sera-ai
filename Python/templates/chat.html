@@ -634,6 +634,21 @@
             border-radius: 0 8px 8px 0;
         }
 
+        /* Screenshot indicator in user messages */
+        .screenshot-badge {
+            font-size: 0.75rem;
+            color: var(--celestial-blue);
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-style: italic;
+            opacity: 0.85;
+        }
+        .screenshot-badge i {
+            font-size: 0.85rem;
+        }
+
     </style>
 </head>
 
@@ -696,6 +711,10 @@
                     <div class="control-item">
                         <span class="fw-semibold"><i class="fa-solid fa-brain me-2" style="color:var(--celestial-purple)"></i> Silenciar Pensamientos</span>
                         <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="t-no-think" onchange="updateToggles()"></div>
+                    </div>
+                    <div class="control-item">
+                        <span class="fw-semibold"><i class="fa-solid fa-gamepad me-2" style="color:#ff6b6b"></i> Modo Gaming</span>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="t-gaming" onchange="updateToggles()"></div>
                     </div>
                 </div>
             </div>
@@ -780,6 +799,7 @@
             <div class="control-item"><span class="fw-semibold"><i class="fa-solid fa-scroll me-2"></i> Inscribir</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="tm-create-mem" onchange="updateToggles(true)"></div></div>
             <div class="control-item"><span class="fw-semibold"><i class="fa-solid fa-monument me-2"></i> Leer</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="tm-use-mem" onchange="updateToggles(true)"></div></div>
             <div class="control-item"><span class="fw-semibold"><i class="fa-solid fa-brain me-2"></i> Silenciar</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="tm-no-think" onchange="updateToggles(true)"></div></div>
+            <div class="control-item"><span class="fw-semibold"><i class="fa-solid fa-gamepad me-2"></i> Gaming</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="tm-gaming" onchange="updateToggles(true)"></div></div>
         </div>
     </div>
 
@@ -825,15 +845,15 @@
                     const data = await res.json();
                     document.getElementById('t-gemini').checked = !!data.gemini_enable;
                     document.getElementById('t-voice').checked = !!data.voice_active;
-                    document.getElementById('t-create-mem').checked = !!data.create_memories;
                     document.getElementById('t-use-mem').checked = !!data.use_memories;
                     document.getElementById('t-no-think').checked = !!data.disable_thinking;
+                    document.getElementById('t-gaming').checked = !!data.gaming_mode;
 
                     document.getElementById('tm-gemini').checked = !!data.gemini_enable;
                     document.getElementById('tm-voice').checked = !!data.voice_active;
-                    document.getElementById('tm-create-mem').checked = !!data.create_memories;
                     document.getElementById('tm-use-mem').checked = !!data.use_memories;
                     document.getElementById('tm-no-think').checked = !!data.disable_thinking;
+                    document.getElementById('tm-gaming').checked = !!data.gaming_mode;
 
                     document.getElementById('prompt-box').value = data.instructions || '';
                 }
@@ -880,7 +900,7 @@
                 const data = JSON.parse(e.data);
                 document.getElementById('chat-log').innerHTML = '';
                 data.history.forEach(msg => {
-                    if (msg.type === "user") appendUserLog(msg.author, msg.text);
+                    if (msg.type === "user") appendUserLog(msg.author, msg.text, msg.screenshot || false);
                     else if (msg.type === "bot") {
                         createBotWrapper();
                         renderStreamContent(currentBotContainer, msg.text, true);
@@ -896,7 +916,7 @@
 
             eventSource.addEventListener('user_msg', (e) => {
                 const data = JSON.parse(e.data);
-                appendUserLog(data.author, data.text);
+                appendUserLog(data.author, data.text, data.screenshot || false);
             });
 
             eventSource.addEventListener('start_gen', (e) => {
@@ -961,18 +981,24 @@
             log.scrollTop = log.scrollHeight;
         }
 
-        function appendUserLog(author, text) {
+        function appendUserLog(author, text, hasScreenshot = false) {
             const log = document.getElementById('chat-log');
             const wrapper = document.createElement('div');
             wrapper.className = 'chat-wrapper chat-user-wrapper';
             const safeText = marked.parse(text);
-            
+
+            let screenshotBadge = '';
+            if (hasScreenshot) {
+                screenshotBadge = `<div class="screenshot-badge"><i class="fa-solid fa-image"></i> Captura adjunta</div>`;
+            }
+
             wrapper.innerHTML = `
                 <div class="chat-msg msg-user">
                     <div class="msg-header justify-content-end text-end" style="color: var(--gold-primary);">
                         ${author} <i class="fa-solid fa-feather ms-1"></i>
                     </div>
                     <div class="markdown-content">${safeText}</div>
+                    ${screenshotBadge}
                 </div>
             `;
             log.appendChild(wrapper);
@@ -1111,16 +1137,16 @@
             const payload = {
                 gemini_enable: document.getElementById(prefix+'gemini').checked,
                 voice_active: document.getElementById(prefix+'voice').checked,
-                create_memories: document.getElementById(prefix+'create-mem').checked,
                 use_memories: document.getElementById(prefix+'use-mem').checked,
-                disable_thinking: document.getElementById(prefix+'no-think').checked
+                disable_thinking: document.getElementById(prefix+'no-think').checked,
+                gaming_mode: document.getElementById(prefix+'gaming').checked
             };
 
             document.getElementById(otherPrefix+'gemini').checked = payload.gemini_enable;
             document.getElementById(otherPrefix+'voice').checked = payload.voice_active;
-            document.getElementById(otherPrefix+'create-mem').checked = payload.create_memories;
             document.getElementById(otherPrefix+'use-mem').checked = payload.use_memories;
             document.getElementById(otherPrefix+'no-think').checked = payload.disable_thinking;
+            document.getElementById(otherPrefix+'gaming').checked = payload.gaming_mode;
             
             try { await fetch('/api/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); } 
             catch (e) {}
